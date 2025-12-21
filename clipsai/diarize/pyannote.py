@@ -54,10 +54,19 @@ class PyannoteDiarizer:
             device = get_compute_device()
         assert_compute_device_available(device)
 
-        self.pipeline = Pipeline.from_pretrained(
-            "pyannote/speaker-diarization-3.1",
-            use_auth_token=auth_token,
-        ).to(torch.device(device))
+        # Support both use_auth_token (old) and token (new) parameters for compatibility
+        # Try use_auth_token first (pyannote.audio < 4.0), then token (pyannote.audio >= 4.0)
+        try:
+            self.pipeline = Pipeline.from_pretrained(
+                "pyannote/speaker-diarization-3.1",
+                use_auth_token=auth_token,
+            ).to(torch.device(device))
+        except TypeError:
+            # Fall back to new parameter name (pyannote.audio >= 4.0)
+            self.pipeline = Pipeline.from_pretrained(
+                "pyannote/speaker-diarization-3.1",
+                token=auth_token,
+            ).to(torch.device(device))
         logging.debug("Pyannote using device: {}".format(self.pipeline.device))
 
     def diarize(
