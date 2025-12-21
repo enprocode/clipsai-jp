@@ -5,8 +5,7 @@ setup(
     py_modules=["clipsai"],
     version="0.2.1",
     description=(
-        "Clips AI is an open-source Python library that automatically converts long "
-        "videos into clips"
+        "Clips AIは、長い動画を自動的にクリップに変換するオープンソースのPythonライブラリです"
     ),
     long_description=open("README.md").read(),
     long_description_content_type="text/markdown",

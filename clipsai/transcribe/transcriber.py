@@ -43,13 +43,14 @@ class Transcriber:
         ----------
         model_size: str
             One of the model sizes implemented by whisper/whisperx. Default is None,
-            which selects large-v2 if cuda is available and tiny if not (cpu).
+            which selects large-v2 if cuda is available and small if not (cpu).
+            For better accuracy, use larger models: large-v2 > medium > small > base > tiny
         device: str
             PyTorch device to perform computations on. Default is None, which auto
             detects the correct device.
-        precision: 'float16' | 'int8'
+        precision: 'float32' | 'float16' | 'int8'
             Precision to perform prediction with. Default is None, which selects
-            float16 if cuda is available and int8 if not (cpu).
+            float32 if cuda is available (for better accuracy) and int8 if not (cpu).
         """
         self._config_manager = TranscriberConfigManager()
         self._type_checker = TypeChecker()
@@ -57,9 +58,12 @@ class Transcriber:
         if device is None:
             device = get_compute_device()
         if precision is None:
-            precision = "float16" if torch.cuda.is_available() else "int8"
+            # Use float32 for GPU for better accuracy (uses more memory)
+            precision = "float32" if torch.cuda.is_available() else "int8"
         if model_size is None:
-            model_size = "large-v2" if torch.cuda.is_available() else "tiny"
+            # Use small instead of tiny for CPU to improve accuracy
+            # For GPU, use large-v2 (best accuracy)
+            model_size = "large-v2" if torch.cuda.is_available() else "small"
 
         # check valid inputs
         assert_valid_torch_device(device)
@@ -78,8 +82,8 @@ class Transcriber:
     def transcribe(
         self,
         audio_file_path: str,
-        iso6391_lang_code: str or None = None,
-        batch_size: int = 16,
+        iso6391_lang_code: str or None = "ja",
+        batch_size: int = None,
     ) -> Transcription:
         """
         Transcribes the media file
@@ -89,10 +93,13 @@ class Transcriber:
         audio_file_path: str
             Absolute path to the audio or video file to transcribe.
         iso6391_lang_code: str or None
-            ISO 639-1 language code to transcribe the media in. Default is None, which
-            autodetects the media's language.
-        batch_size: int = 16
-            reduce if low in GPU memory (not actually sure what it does though -Ben)
+            ISO 639-1 language code to transcribe the media in. Default is "ja" (Japanese)
+            for better accuracy. Set to None to auto-detect (not recommended for Japanese-focused use).
+        batch_size: int = None
+            Batch size for transcription. Default is None, which selects:
+            - 32 for GPU (better accuracy, uses more memory)
+            - 16 for CPU
+            Reduce if low in GPU memory.
         Returns
         -------
         Transcription
@@ -106,7 +113,11 @@ class Transcriber:
         if iso6391_lang_code is not None:
             self._config_manager.assert_valid_language(iso6391_lang_code)
 
-        # if iso6391_lang_code is None, whisperx will try to detect the language
+        # Auto-adjust batch size for better accuracy on GPU
+        if batch_size is None:
+            batch_size = 32 if torch.cuda.is_available() else 16
+
+        # Use Japanese language explicitly for better accuracy
         transcription = self._model.transcribe(
             media_file.path, language=iso6391_lang_code, batch_size=batch_size
         )
