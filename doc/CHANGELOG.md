@@ -46,3 +46,18 @@
 - プラットフォームテスト:
   - Windows: テスト済み・検証済み
   - Mac: コードレベルでの検証完了（MPSサポートがコードで確認済み）
+
+### 既知の問題と制限事項
+- **依存関係の競合**: 一部の依存関係（torch/torchvision、numpy、huggingface-hub/transformers）でバージョン競合が発生する可能性があります
+  - torch 2.9.1とtorchvision 0.17.2は互換性がありません（torchvision 0.17.2はtorch 2.2.2を要求）
+  - numpy 2.xと一部のパッケージ（facenet-pytorch、mediapipe、numba）は互換性の問題があります
+  - huggingface-hubとtransformersのバージョン要件が競合する場合があります
+- **推奨される解決策**: 
+  - 仮想環境を使用して依存関係を分離する
+  - `requirements.txt`を使用して開発環境を再現する
+  - 本番環境では`setup.py`のバージョン範囲に基づいてインストールする
+
+### ドキュメント
+- ドキュメントを`doc/`ディレクトリに整理
+  - `doc/CHANGELOG.md`: 変更履歴
+  - `doc/UPDATE_DEPENDENCIES.md`: 依存関係更新ガイド
