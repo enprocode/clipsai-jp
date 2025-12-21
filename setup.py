@@ -46,8 +46,8 @@ setup(
     project_urls={
         "Documentation": "https://docs.clipsai.com/",
         "Homepage": "https://clipsai.com/",
-        "Repository": "https://github.com/ClipsAI/clipsai",
-        "Issues": "https://github.com/ClipsAI/clipsai/issues",
+        "Repository": "https://github.com/enprocode/clipsai-jp",
+        "Issues": "https://github.com/enprocode/clipsai-jp/issues",
     },
     include_package_data=True,
     extras_require={
