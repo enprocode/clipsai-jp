@@ -1,13 +1,13 @@
-from setuptools import find_packages, setup
+from setuptools import find_packages, setup  # type: ignore
 
 setup(
     name="clipsai",
     py_modules=["clipsai"],
-    version="0.2.1",
+    version="1.0.0",
     description=(
         "Clips AIは、長い動画を自動的にクリップに変換するオープンソースのPythonライブラリです"
     ),
-    long_description=open("README.md").read(),
+    long_description=open("README.md", encoding="utf-8").read(),
     long_description_content_type="text/markdown",
     author="Benjamin Smidt, Johann Ramirez, Armel Talla",
     author_email="support@clipsai.com",
