@@ -2,6 +2,8 @@
 __pycache__/
 *.py[cod]
 *$py.class
+.pypirc
+video.mp4
 
 # C extensions
 *.so
