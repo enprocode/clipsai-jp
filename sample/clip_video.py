@@ -20,7 +20,8 @@
 from clipsai import ClipFinder, Transcriber
 
 # 動画ファイルのパス（絶対パスを指定してください）
-video_file_path = "video.mp4"
+import os
+video_file_path = os.path.join(os.path.dirname(__file__), "video.mp4")
 
 # 1. トランスクリプターを作成して動画を文字起こし
 print("動画を文字起こししています...")
