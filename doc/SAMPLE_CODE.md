@@ -242,7 +242,20 @@ $env:GEMINI_API_KEY="your_api_key_here"
 set GEMINI_API_KEY=your_api_key_here
 ```
 
-**注意:** Gemini APIはオプショナル機能です。APIキーが設定されていない場合や、API呼び出しに失敗した場合でも、TextTilingアルゴリズムのみで動作します。
+**注意:** 
+- Gemini APIはオプショナル機能です。APIキーが設定されていない場合や、API呼び出しに失敗した場合でも、TextTilingアルゴリズムのみで動作します。
+- MeCabもオプショナル機能です。MeCabがインストールされていない場合、自動的にNLTKにフォールバックします。ただし、MeCabをインストールすることで、日本語の文分割精度が向上し、より自然な動画分割が可能になります。
+
+**MeCabによる日本語文分割（自動使用）:**
+
+ClipsAI-JPは、日本語の文字起こしに対して自動的にMeCabを使用して文分割を行います。これにより、より自然で正確な文分割が可能になり、クリップ検出の精度が向上します。
+
+- MeCabがインストールされている場合: 自動的にMeCabを使用して日本語の文構造を考慮した文分割を実行
+- MeCabがインストールされていない場合: 自動的にNLTKにフォールバック（既存の動作を維持）
+- MeCabのインストール方法:
+  - Windows: [MeCab公式サイト](https://taku910.github.io/mecab/)からインストーラーをダウンロード
+  - Mac: `brew install mecab mecab-ipadic`
+  - Linux: `sudo apt-get install mecab libmecab-dev mecab-ipadic-utf8`
 
 **トラブルシューティング:**
 - クリップが1つも見つからない場合: `cutoff_policy="low"`に変更してみてください
@@ -251,6 +264,8 @@ set GEMINI_API_KEY=your_api_key_here
 - 日本語動画の精度を向上させたい場合: `embedding_model="japanese"`を指定してください
 - より高精度な検出が必要な場合: `embedding_model="high_accuracy"`または`"large"`を指定してください（処理時間が長くなります）
 - クリップ検出精度を最大限に向上させたい場合: `use_gemini=True`を指定してGemini APIを使用してください
+- 日本語の文分割が不自然な場合: MeCabをインストールすることで、より自然な文分割が可能になります（自動的に使用されます）
+- 日本語の文分割が不自然な場合: MeCabをインストールすることで、より自然な文分割が可能になります
 
 ### 2. `sample/resize_video.py`
 動画を指定したアスペクト比にリサイズするサンプルです。

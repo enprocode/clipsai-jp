@@ -35,6 +35,14 @@ try:
 except Exception:
     pass
 
+# Japanese sentence splitter (MeCab)
+try:
+    from .japanese_sentence_splitter import JapaneseSentenceSplitter
+    JAPANESE_SPLITTER_AVAILABLE = True
+except ImportError:
+    JAPANESE_SPLITTER_AVAILABLE = False
+    JapaneseSentenceSplitter = None
+
 
 class Transcription:
     """
@@ -797,7 +805,33 @@ class Transcription:
         None
         """
         char_info = self.get_char_info()
-        sentences = sent_tokenize(self.text)
+        
+        # 日本語の場合はMeCabを使用、それ以外はNLTKを使用
+        if self._language == "ja" and JAPANESE_SPLITTER_AVAILABLE:
+            try:
+                splitter = JapaneseSentenceSplitter()
+                sentences = splitter.split_sentences(self.text)
+                logging.info(
+                    f"Using MeCab for Japanese sentence splitting: "
+                    f"{len(sentences)} sentences"
+                )
+            except ImportError:
+                # MeCabがインストールされていない場合
+                logging.warning(
+                    "MeCab not available, falling back to NLTK for "
+                    "sentence splitting"
+                )
+                sentences = sent_tokenize(self.text)
+            except Exception as e:
+                # MeCabの初期化エラーなど
+                logging.warning(
+                    f"MeCab error: {e}, falling back to NLTK for "
+                    "sentence splitting"
+                )
+                sentences = sent_tokenize(self.text)
+        else:
+            # 日本語以外はNLTKを使用
+            sentences = sent_tokenize(self.text)
 
         # final destination for sentence_info
         sentence_info = []

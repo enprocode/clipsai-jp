@@ -95,37 +95,53 @@ class GeminiClipFinder:
         # テキストを適切な長さに切り詰め（Geminiの入力制限を考慮）
         text_preview = transcription_text[:4000]
 
-        # センテンス情報から時間情報を抽出
+        # センテンス情報から時間情報を抽出（インデックスも含める）
         sentences_summary = [
             {
+                "index": i,
                 "start_time": s.get("start_time", 0),
                 "end_time": s.get("end_time", 0),
-                "sentence": s.get("sentence", "")[:100],  # 長すぎるセンテンスを切り詰め
+                "sentence": s.get("sentence", "")[:200],  # より長い文を保持
             }
-            for s in sentences[:100]  # 最初の100センテンスのみ
+            for i, s in enumerate(sentences[:150])  # より多くの文を考慮
         ]
 
-        prompt = f"""以下の動画の文字起こしテキストを分析して、トピックが変わる境界を見つけてください。
+        prompt = f"""あなたは動画編集の専門家です。以下の動画の文字起こしテキストを分析して、自然なトピック境界を見つけてください。
 
 【文字起こしテキスト】
 {text_preview}
 
-【センテンス情報（時間情報付き）】
+【文分割結果（MeCabで日本語最適化済み）】
 {json.dumps(sentences_summary, ensure_ascii=False, indent=2)}
 
 【要件】
-- 各クリップは{min_clip_duration}秒以上{max_clip_duration}秒以下であること
-- トピックが明確に変わる箇所を境界として提案
-- JSON形式で返答すること
+1. 各クリップは{min_clip_duration}秒以上{max_clip_duration}秒以下であること
+2. トピックが明確に変わる箇所を境界として提案
+3. 文の途中で分割しないこと（文の境界で分割）
+4. 自然な会話の流れを考慮すること
+5. 日本語の文構造（主述関係、修飾関係）を考慮すること
+
+【重要な注意点】
+- 提供された文分割結果は、MeCabで日本語の文構造を考慮して分割されています
+- 各文の境界（start_time, end_time）を尊重してください
+- 文の途中で分割すると、不自然な動画分割になります
+- 文のインデックス（index）を参考にして、文の境界で分割してください
 
 【出力形式】
 JSON配列形式で返答してください:
 [
-  {{"start_time": 開始時間（秒）, "end_time": 終了時間（秒）, "topic": "トピック名の説明"}},
+  {{
+    "start_time": 開始時間（秒）,
+    "end_time": 終了時間（秒）,
+    "topic": "トピック名の説明",
+    "reason": "この境界を選んだ理由",
+    "sentence_indices": [開始文のインデックス, 終了文のインデックス]
+  }},
   ...
 ]
 
 各クリップの start_time と end_time は、提供されたセンテンス情報の start_time と end_time を使用してください。
+文のインデックス（index）を参考にして、文の境界で分割してください。
 """
 
         try:
