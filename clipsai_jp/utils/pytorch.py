@@ -294,8 +294,8 @@ def mem_stats() -> dict:
             info = pynvml.nvmlDeviceGetMemoryInfo(h)
             total_gpu_memory = info.total
             free_gpu_memory = info.free
-        except ImportError:
-            # pynvmlがインスト�EルされてぁE��ぁE��合�Eフォールバック
+        except Exception:
+            # pynvmlがインスト�EルされてぁE��ぁE��合�Eフォールバック
             logging.debug("pynvml not installed. Using torch.cuda for GPU memory stats.")
             if torch.cuda.is_available():
                 total_gpu_memory = torch.cuda.get_device_properties(0).total_memory

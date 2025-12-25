@@ -125,6 +125,7 @@ class Transcriber:
             media_file.path,
             language=iso6391_lang_code,
             beam_size=5,
+            batch_size=batch_size,
             word_timestamps=True,
         )
 
