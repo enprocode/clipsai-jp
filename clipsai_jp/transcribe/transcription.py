@@ -25,7 +25,15 @@ from clipsai_jp.utils.type_checker import TypeChecker
 import nltk
 from nltk.tokenize import sent_tokenize
 
-nltk.download("punkt")
+# Download NLTK data (punkt for older versions, punkt_tab for NLTK 3.8+)
+try:
+    nltk.download("punkt", quiet=True)
+except Exception:
+    pass
+try:
+    nltk.download("punkt_tab", quiet=True)
+except Exception:
+    pass
 
 
 class Transcription:
