@@ -95,7 +95,11 @@ pip install clipsai-jp
 プロジェクトルートで以下のコマンドを実行：
 
 ```bash
+# 基本的な開発モードインストール
 pip install -e .
+
+# 開発ツール（pytest、black、flake8など）も含めてインストールする場合
+pip install -e .[dev]
 ```
 
 これにより、ローカルでビルドしたclipsai-jpパッケージが開発モードでインストールされ、
@@ -159,8 +163,14 @@ ClipsAIには、オプショナルな依存関係がいくつかあります。�
 
 GPUメモリの詳細な統計情報を取得する場合にインストールします：
 
+**PyPIからインストールする場合:**
 ```bash
 pip install clipsai-jp[gpu]
+```
+
+**ローカル開発の場合:**
+```bash
+pip install -e .[gpu]
 ```
 
 このオプションには以下のパッケージが含まれます：
@@ -172,8 +182,14 @@ pip install clipsai-jp[gpu]
 
 開発やテストを行う場合にインストールします：
 
+**PyPIからインストールする場合:**
 ```bash
 pip install clipsai-jp[dev]
+```
+
+**ローカル開発の場合:**
+```bash
+pip install -e .[dev]
 ```
 
 このオプションには以下のパッケージが含まれます：
@@ -181,14 +197,20 @@ pip install clipsai-jp[dev]
 - `pandas`: テスト用データ処理
 - `matplotlib`: 開発用可視化
 - `black`, `flake8`: コードフォーマッターとリンター
-- その他の開発ツール
+- `ipykernel`, `build`, `twine`: その他の開発ツール
 
 ### 複数のオプションを同時にインストール
 
 複数のオプションを同時にインストールする場合：
 
+**PyPIからインストールする場合:**
 ```bash
 pip install clipsai-jp[gpu,dev]
+```
+
+**ローカル開発の場合:**
+```bash
+pip install -e .[gpu,dev]
 ```
 
 ## 依存関係のトラブルシューティング
