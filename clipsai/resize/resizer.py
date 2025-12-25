@@ -56,8 +56,7 @@ class Resizer:
             Default is 20 pixels.
         face_detect_post_process: bool, optional
             This parameter is kept for backward compatibility but is not used with
-            MediaPipe Face Detection. MediaPipe does not support post-processing in
-            the same way as MTCNN. Default is False.
+            MediaPipe Face Detection. Default is False.
         device: str, optional
             PyTorch device to perform computations on. Ex: 'cpu', 'cuda'. Default is
             None (auto detects the correct device). Note: MediaPipe automatically uses

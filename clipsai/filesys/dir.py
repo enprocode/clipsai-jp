@@ -305,7 +305,7 @@ class Dir(FileSystemObject):
         """
         self.assert_exists()
 
-        # delete files media_file_to_transcode
+        # delete files
         files = self.get_files()
         for file in files:
             file.delete()
