@@ -27,15 +27,16 @@ jobs:
     steps:
       # Checkout the code as the first step.
       - checkout
-      # - python/install-packages:
-      #     pkg-manager: pip
-          # app-dir: ~/project/package-directory/  # If your requirements.txt isn't in the root directory.
-          # pip-dependency-file: test-requirements.txt  # if you have a different name for your requirements file, maybe one that combines your runtime and test requirements.
+      # Install dependencies
+      - run:
+          name: Install dependencies
+          command: |
+            python -m pip install --upgrade pip
+            pip install -e .[dev]
+      # Run tests
       - run:
           name: Run tests
-      #     # This assumes pytest is installed via the install-package step above
-          # command: pytest
-          command: echo "test"
+          command: pytest tests/ -v --tb=short
 
 # Orchestrate jobs using workflows
 # See: https://circleci.com/docs/guides/orchestrate/workflows/ & https://circleci.com/docs/reference/configuration-reference/#workflows

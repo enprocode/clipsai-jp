@@ -1,11 +1,11 @@
 from setuptools import find_packages, setup  # type: ignore
 
 setup(
-    name="clipsai",
+    name="clipsai-jp",
     py_modules=["clipsai"],
     version="1.0.0",
     description=(
-        "Clips AIは、長い動画を自動的にクリップに変換するオープンソースのPythonライブラリです"
+        "Clips AIは、長い動画を自動的にクリップに変換するオープンソースのPythonライブラリです（日本語専用版）"
     ),
     long_description=open("README.md", encoding="utf-8").read(),
     long_description_content_type="text/markdown",
@@ -16,8 +16,14 @@ setup(
     packages=find_packages(exclude=["tests*"]),
     install_requires=[
         # コア依存関係（最小限）
-        "numpy>=1.24.0",  # facenet-pytorch制約を削除、最新版使用可能
-        "torch>=2.2.0",  # facenet-pytorch制約を削除、最新版使用可能
+        "numpy>=1.24.0,<2.1.0",
+        
+        # 文字起こし（faster-whisperを使用）
+        "faster-whisper>=1.0.0,<2.0.0",
+        
+        # torch は pyannote.audio の要件に合わせて設定
+        # pyannote.audio 3.3.0+ は torch>=2.0.0 を要求
+        "torch>=2.0.0,<3.0.0",
         
         # 音声/動画処理
         "av>=11.0.0,<17.0.0",

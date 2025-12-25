@@ -1,11 +1,11 @@
 """
-Transcriptions generated using WhisperX.
+Transcriptions generated using faster-whisper.
 
 Notes
 -----
 - Character, word, and sentence level time stamps are available
 - NLTK used for tokenizing sentences
-- WhisperX GitHub: https://github.com/m-bain/whisperX
+- Faster-Whisper GitHub: https://github.com/guillaumekln/faster-whisper
 """
 # standard library imports
 from __future__ import annotations
