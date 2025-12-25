@@ -85,9 +85,10 @@ python -m pip install --upgrade pip
 ### 方法1: PyPIからインストール（本番環境）
 
 ```bash
-pip install clipsai
-pip install whisperx@git+https://github.com/m-bain/whisperx.git
+pip install clipsai-jp
 ```
+
+**注意:** このパッケージは元の`clipsai`の日本語専用フォーク版です。`faster-whisper`を使用しており、依存関係の問題を解決しています。
 
 ### 方法2: 開発モードでインストール（ローカル開発）
 
@@ -97,7 +98,7 @@ pip install whisperx@git+https://github.com/m-bain/whisperx.git
 pip install -e .
 ```
 
-これにより、ローカルでビルドしたclipsaiパッケージが開発モードでインストールされ、
+これにより、ローカルでビルドしたclipsai-jpパッケージが開発モードでインストールされ、
 コードの変更が即座に反映されます。
 
 ## サンプルファイル一覧
@@ -154,12 +155,12 @@ python sample/complete_example.py
 
 ClipsAIには、オプショナルな依存関係がいくつかあります。これらは通常の使用には必要ありませんが、特定の機能を使用する場合や開発を行う場合に必要になります。
 
-### GPUメモリ監視機能（`clipsai[gpu]`）
+### GPUメモリ監視機能（`clipsai-jp[gpu]`）
 
 GPUメモリの詳細な統計情報を取得する場合にインストールします：
 
 ```bash
-pip install clipsai[gpu]
+pip install clipsai-jp[gpu]
 ```
 
 このオプションには以下のパッケージが含まれます：
@@ -167,12 +168,12 @@ pip install clipsai[gpu]
 
 **注意**: `pynvml`がインストールされていない場合でも、基本的なGPUメモリ情報は`torch.cuda`を使用して取得されます。
 
-### 開発・テスト用パッケージ（`clipsai[dev]`）
+### 開発・テスト用パッケージ（`clipsai-jp[dev]`）
 
 開発やテストを行う場合にインストールします：
 
 ```bash
-pip install clipsai[dev]
+pip install clipsai-jp[dev]
 ```
 
 このオプションには以下のパッケージが含まれます：
@@ -187,7 +188,7 @@ pip install clipsai[dev]
 複数のオプションを同時にインストールする場合：
 
 ```bash
-pip install clipsai[gpu,dev]
+pip install clipsai-jp[gpu,dev]
 ```
 
 ## 依存関係のトラブルシューティング
@@ -217,10 +218,11 @@ pip install -e .
 #### 2. 互換性のあるバージョンを明示的にインストール
 
 ```bash
-# numpy と torch を互換性のあるバージョンに固定
-pip install "numpy>=1.24.0,<2.0.0" "torch>=2.2.0,<2.3.0" "torchvision>=0.17.0,<0.18.0"
+# faster-whisper は numpy>=1.24.0 を要求（より柔軟なバージョン制約）
+# torch は pyannote.audio の要件に合わせて設定（pyannote.audio 3.3.0+ は torch>=2.0.0 を要求）
+pip install "numpy>=1.24.0,<2.1.0" "torch>=2.0.0,<3.0.0"
 
-# その後、clipsaiを再インストール
+# その後、clipsai-jpを再インストール
 pip install -e .
 ```
 
@@ -228,20 +230,20 @@ pip install -e .
 
 ```bash
 # 競合しているパッケージをアンインストール
-pip uninstall numpy torch torchvision facenet-pytorch -y
+pip uninstall numpy torch torchaudio torchvision facenet-pytorch -y
 
-# 互換性のあるバージョンをインストール
-pip install "numpy>=1.24.0,<2.0.0" "torch>=2.2.0,<2.3.0" "torchvision>=0.17.0,<0.18.0"
+# faster-whisper と pyannote.audio の要件を満たすバージョンをインストール
+pip install "numpy>=1.24.0,<2.1.0" "torch>=2.0.0,<3.0.0"
 
-# clipsaiを再インストール
+# clipsai-jpを再インストール
 pip install -e .
 ```
 
 ### よくあるエラー
 
-- **`numpy` のバージョン競合**: 以前は `facenet-pytorch` が `numpy<2.0.0` を要求していましたが、現在は MediaPipe Face Detection を使用しているため、最新版の `numpy` を使用できます
-- **`torch` のバージョン競合**: 以前は `facenet-pytorch` が `torch<2.3.0,>=2.2.0` を要求していましたが、現在は最新版の `torch` を使用できます
-- **`torchvision` のバージョン競合**: `torchvision` は対応する `torch` のバージョンと一致する必要があります
+- **`numpy` のバージョン競合**: `faster-whisper`は`numpy>=1.24.0`を要求します（`numpy 2.x`もサポート）。以前は`whisperx`が`numpy>=2.0.2,<2.1.0`を要求していましたが、`faster-whisper`はより柔軟なバージョン制約を持っています。
+- **`torch` のバージョン競合**: `pyannote.audio`は`torch>=2.0.0`を要求します。`faster-whisper`は`torch`に依存していないため、依存関係の競合が少なくなっています。
+- **`torchvision` のバージョン競合**: `torchvision`は`facenet-pytorch`の依存関係としてインストールされていましたが、`facenet-pytorch`を削除したため、`torchvision`も不要になりました。他のパッケージが`torchvision`を要求する場合は、`torch`と互換性のあるバージョンをインストールしてください。
 
 ## 注意事項
 

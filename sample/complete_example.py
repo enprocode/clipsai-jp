@@ -20,7 +20,7 @@ ClipsAIの完全な使用例
 from clipsai import ClipFinder, Transcriber, resize
 
 # 設定
-video_file_path = "/abs/path/to/video.mp4"
+video_file_path = "video.mp4"
 pyannote_auth_token = "your_pyannote_token_here"  # リサイズ機能を使用する場合のみ必要
 
 # ============================================

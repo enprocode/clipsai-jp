@@ -1,8 +1,12 @@
-# ClipsAI
+# ClipsAI-JP
 
-<!-- [![PyPI version](https://badge.fury.io/py/project-name.svg)](https://badge.fury.io/py/project-name) -->
+[![PyPI version](https://badge.fury.io/py/clipsai-jp.svg)](https://badge.fury.io/py/clipsai-jp)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
+> **注意:** このパッケージは[ClipsAI](https://github.com/ClipsAI/clipsai)の日本語専用フォーク版です。
+> - 元の`whisperx`を`faster-whisper`に置き換え、依存関係の問題を解決
+> - 日本語環境での使用に最適化
+> - 元のプロジェクト: https://github.com/ClipsAI/clipsai
 
 ## クイックスタート
 
@@ -16,24 +20,22 @@ Clips AIは、長い動画を自動的にクリップに変換するオープン
 ### インストール
 
 1. Pythonの依存関係をインストールします。 <br></br> *依存関係の競合を避けるため、仮想環境（[venv](https://packaging.python.org/en/latest/guides/installing-using-pip-and-virtual-environments/#create-and-use-virtual-environments)など）の使用を強く推奨します*
-    ```bash {{ language: 'python' }}
-    pip install clipsai
+    ```bash
+    pip install clipsai-jp
     ```
 
-    ```bash {{ language: 'python' }}
-    pip install whisperx@git+https://github.com/m-bain/whisperx.git
-    ```
+    **注意:** このパッケージは元の[ClipsAI](https://github.com/ClipsAI/clipsai)の日本語専用フォーク版です。`faster-whisper`を使用しており、依存関係の問題を解決しています。
 
     **オプショナル依存関係:**
     
     - **GPUメモリ監視機能を使用する場合:**
       ```bash
-      pip install clipsai[gpu]
+      pip install clipsai-jp[gpu]
       ```
     
     - **開発・テスト用パッケージをインストールする場合:**
       ```bash
-      pip install clipsai[dev]
+      pip install clipsai-jp[dev]
       ```
 
 2. [libmagic](https://github.com/ahupp/python-magic?tab=readme-ov-file#debianubuntu)をインストールします
@@ -52,7 +54,7 @@ Clips AIは、長い動画を自動的にクリップに変換するオープン
 
 ### クリップの作成
 
-クリップは動画のトランスクリプトを使用して見つけられるため、まず動画を文字起こしする必要があります。文字起こしは[WhisperX](https://github.com/m-bain/whisperX)を使用して行われます。これは[Whisper](https://github.com/openai/whisper)のオープンソースラッパーで、各単語の開始時刻と終了時刻を検出する追加機能を備えています。元の動画を選択したクリップにトリミングするには、クリッピングリファレンスを参照してください。
+クリップは動画のトランスクリプトを使用して見つけられるため、まず動画を文字起こしする必要があります。文字起こしは[faster-whisper](https://github.com/guillaumekln/faster-whisper)を使用して行われます。これは[Whisper](https://github.com/openai/whisper)の高速実装版で、CTranslate2を使用して高速化されています。各単語の開始時刻と終了時刻を検出する機能を備えています。元の動画を選択したクリップにトリミングするには、クリッピングリファレンスを参照してください。
 
 ```python
 from clipsai import ClipFinder, Transcriber
