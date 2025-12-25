@@ -52,6 +52,9 @@ setup(
         "psutil>=5.9.0,<8.0.0",
         "python-magic>=0.4.20,<0.5.0",
         "scipy>=1.9.0,<2.0.0",
+        
+        # Gemini API（クリップ検出精度向上用）
+        "google-genai>=1.0.0",
     ],
     zip_safe=False,
     python_requires=">=3.9",

@@ -4,7 +4,7 @@ __pycache__/
 *$py.class
 .pypirc
 video.mp4
-
+sample/output/
 # C extensions
 *.so
 

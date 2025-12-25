@@ -86,7 +86,6 @@ class Transcriber:
         self,
         audio_file_path: str,
         iso6391_lang_code: str or None = "ja",
-        batch_size: int = None,
     ) -> Transcription:
         """
         Transcribes the media file
@@ -98,11 +97,7 @@ class Transcriber:
         iso6391_lang_code: str or None
             ISO 639-1 language code to transcribe the media in. Default is "ja" (Japanese)
             for better accuracy. Set to None to auto-detect (not recommended for Japanese-focused use).
-        batch_size: int = None
-            Batch size for transcription. Default is None, which selects:
-            - 32 for GPU (better accuracy, uses more memory)
-            - 16 for CPU
-            Reduce if low in GPU memory.
+
         Returns
         -------
         Transcription
@@ -116,16 +111,11 @@ class Transcriber:
         if iso6391_lang_code is not None:
             self._config_manager.assert_valid_language(iso6391_lang_code)
 
-        # Auto-adjust batch size for better accuracy on GPU
-        if batch_size is None:
-            batch_size = 32 if torch.cuda.is_available() else 16
-
         # Use faster-whisper to transcribe with word timestamps
         segments, info = self._model.transcribe(
             media_file.path,
             language=iso6391_lang_code,
             beam_size=5,
-            batch_size=batch_size,
             word_timestamps=True,
         )
 

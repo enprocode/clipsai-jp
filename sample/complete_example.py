@@ -59,7 +59,26 @@ print()
 print("=" * 50)
 print("ステップ2: クリップを検索")
 print("=" * 50)
+
+# デフォルト設定（15秒〜15分のクリップ）
 clipfinder = ClipFinder()
+
+# ショート動画（最大60秒）向けの設定例:
+# clipfinder = ClipFinder(
+#     min_clip_duration=10,      # 最小10秒
+#     max_clip_duration=60,      # 最大60秒（ショート動画）
+#     cutoff_policy="average",   # "high"（厳しい）→ "average"（標準）→ "low"（緩い）
+#     embedding_model="japanese",  # 日本語最適化モデル（精度向上）
+# )
+
+# より高精度なモデルを使用する場合:
+# clipfinder = ClipFinder(
+#     min_clip_duration=10,
+#     max_clip_duration=60,
+#     cutoff_policy="average",
+#     embedding_model="high_accuracy",  # または "intfloat/multilingual-e5-base"
+# )
+
 clips = clipfinder.find_clips(transcription=transcription)
 
 print(f"見つかったクリップ数: {len(clips)}")

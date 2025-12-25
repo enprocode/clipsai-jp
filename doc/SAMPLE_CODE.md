@@ -118,6 +118,87 @@ pip install -e .[dev]
 python sample/clip_video.py
 ```
 
+**ClipFinderのパラメータ調整:**
+
+`ClipFinder`には、クリップ検出を調整するためのパラメータがあります。特にショート動画（最大60秒）を作成する場合は、以下の設定を推奨します：
+
+```python
+from clipsai_jp import ClipFinder
+
+# ショート動画（最大60秒）向けの推奨設定
+clipfinder = ClipFinder(
+    min_clip_duration=10,      # 最小クリップ長（秒）
+    max_clip_duration=60,      # 最大クリップ長（秒）- ショート動画は60秒以下
+    cutoff_policy="average",   # 境界検出の厳しさ: "low"（緩い）/ "average"（標準）/ "high"（厳しい）
+    embedding_model="japanese",  # 日本語最適化モデル（精度向上）
+)
+```
+
+**パラメータの説明:**
+- `min_clip_duration` (デフォルト: 15): クリップの最小長さ（秒）。より短いクリップを検出したい場合は小さな値を設定
+- `max_clip_duration` (デフォルト: 900): クリップの最大長さ（秒）。ショート動画の場合は60程度を推奨
+- `cutoff_policy` (デフォルト: "high"): トピック境界の検出の厳しさ
+  - `"low"`: 緩い検出（多くのクリップが生成される可能性）
+  - `"average"`: 標準的な検出（推奨）
+  - `"high"`: 厳しい検出（少ないクリップが生成される可能性）
+- `embedding_model` (デフォルト: None): テキスト埋め込みに使用するAIモデル
+  - `None` または未指定: デフォルトモデル（`all-roberta-large-v1`、英語特化、高速）
+  - `"japanese"`: 日本語最適化モデル（`paraphrase-multilingual-mpnet-base-v2`、推奨）
+  - `"high_accuracy"`: 高精度モデル（`intfloat/multilingual-e5-base`、多言語対応）
+  - `"large"`: 最高精度モデル（`intfloat/multilingual-e5-large`、処理時間が長い）
+  - 完全なモデル名を直接指定することも可能（例: `"sentence-transformers/paraphrase-multilingual-mpnet-base-v2"`）
+
+**Gemini APIを使用して精度を向上させる場合:**
+
+GoogleのGemini APIを使用することで、より高度なセマンティック理解に基づいたトピックセグメンテーションが可能になります。特に日本語コンテンツでのクリップ検出精度が向上します。
+
+```python
+import os
+
+# 環境変数 GEMINI_API_KEY を設定（推奨）
+# export GEMINI_API_KEY="your_api_key_here"  # Linux/Mac
+# $env:GEMINI_API_KEY="your_api_key_here"     # Windows PowerShell
+
+# Gemini APIを使用した高精度なクリップ検出
+clipfinder = ClipFinder(
+    min_clip_duration=10,
+    max_clip_duration=60,
+    cutoff_policy="average",
+    embedding_model="japanese",
+    use_gemini=True,  # Gemini APIを使用
+    gemini_api_key=os.getenv("GEMINI_API_KEY"),  # 環境変数から取得（推奨）
+    gemini_model="gemini-2.5-flash",  # または "gemini-2.5-pro"（高精度）
+    gemini_priority=0.7,  # Geminiの提案を70%重視（0.0=TextTilingのみ, 1.0=Geminiのみ）
+)
+```
+
+**Gemini APIパラメータの説明:**
+- `use_gemini` (デフォルト: False): Gemini APIを使用するかどうか
+- `gemini_api_key` (デフォルト: None): Gemini APIキー。Noneの場合は環境変数 `GEMINI_API_KEY` から取得
+- `gemini_model` (デフォルト: "gemini-2.5-flash"): 使用するGeminiモデル
+  - `"gemini-2.5-flash"`: 推奨、高速
+  - `"gemini-2.5-pro"`: 高精度、処理時間が長い
+- `gemini_priority` (デフォルト: 0.5): Geminiの提案の重み（0.0-1.0）
+  - `0.0`: TextTilingのみを使用
+  - `0.5`: TextTilingとGeminiの提案を均等に重視
+  - `1.0`: Geminiのみを使用
+
+**Gemini APIキーの取得方法:**
+1. [Google AI Studio](https://aistudio.google.com/app/apikey)にアクセス
+2. 「APIキーを作成」をクリック
+3. 生成されたAPIキーをコピー
+4. 環境変数 `GEMINI_API_KEY` に設定、または`gemini_api_key`パラメータで直接指定
+
+**注意:** Gemini APIはオプショナル機能です。APIキーが設定されていない場合や、API呼び出しに失敗した場合でも、TextTilingアルゴリズムのみで動作します。
+
+**トラブルシューティング:**
+- クリップが1つも見つからない場合: `cutoff_policy="low"`に変更してみてください
+- 動画全体が1つのクリップとして返される場合: `cutoff_policy="average"`または`"low"`に変更してください
+- より短いクリップが必要な場合: `min_clip_duration`を5-10秒程度に設定してください
+- 日本語動画の精度を向上させたい場合: `embedding_model="japanese"`を指定してください
+- より高精度な検出が必要な場合: `embedding_model="high_accuracy"`または`"large"`を指定してください（処理時間が長くなります）
+- クリップ検出精度を最大限に向上させたい場合: `use_gemini=True`を指定してGemini APIを使用してください
+
 ### 2. `sample/resize_video.py`
 動画を指定したアスペクト比にリサイズするサンプルです。
 - 動画を9:16（縦型）などのアスペクト比にリサイズ

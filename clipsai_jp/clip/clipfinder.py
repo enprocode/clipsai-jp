@@ -3,10 +3,12 @@ Finding clips with AudioFiles using the TextTiling algorithm.
 """
 # standard library imports
 import logging
+from typing import List
 
 # current package imports
 from .clip import Clip
 from .exceptions import ClipFinderError
+from .gemini_clipfinder import GeminiClipFinder
 from .text_embedder import TextEmbedder
 from .texttiler import TextTiler
 from .texttiler import TextTilerConfigManager
@@ -36,6 +38,11 @@ class ClipFinder:
         embedding_aggregation_pool_method: str = "max",
         smoothing_width: int = 3,
         window_compare_pool_method: str = "mean",
+        embedding_model: str = None,
+        use_gemini: bool = False,
+        gemini_api_key: str = None,
+        gemini_model: str = "gemini-2.5-flash",
+        gemini_priority: float = 0.5,
     ) -> None:
         """
         Parameters
@@ -61,6 +68,19 @@ class ClipFinder:
             the method used to pool embeddings within windows (of size k) for comparison
             to adjacent windows.
             Possible values: 'mean', 'max'
+        embedding_model: str or None
+            SentenceTransformer model name for text embeddings. If None, uses default.
+            Can use shortcuts: 'japanese' (日本語最適化), 'high_accuracy' (高精度),
+            'large' (最高精度、遅い), or full model names.
+            See TextEmbedder.RECOMMENDED_MODELS for available options.
+        use_gemini: bool
+            Gemini APIを使用するかどうか（デフォルト: False）
+        gemini_api_key: str or None
+            Gemini APIキー。Noneの場合は環境変数 GEMINI_API_KEY から取得
+        gemini_model: str
+            使用するGeminiモデル名（デフォルト: "gemini-2.5-flash"）
+        gemini_priority: float
+            Geminiの提案の重み（0.0=TextTilingのみ, 1.0=Geminiのみ、デフォルト: 0.5）
         """
         # configuration check
         config_manager = ClipFinderConfigManager()
@@ -84,6 +104,26 @@ class ClipFinder:
         self._max_clip_duration = max_clip_duration
         self._smoothing_width = smoothing_width
         self._window_compare_pool_method = window_compare_pool_method
+        self._embedding_model = embedding_model
+
+        # Gemini統合の初期化
+        if use_gemini:
+            try:
+                self._gemini_finder = GeminiClipFinder(
+                    api_key=gemini_api_key,
+                    model=gemini_model,
+                )
+                self._use_gemini = True
+                self._gemini_priority = gemini_priority
+                logger.info("Gemini clip finder initialized")
+            except Exception as e:
+                logger.warning(
+                    f"Failed to initialize Gemini: {e}. "
+                    "Falling back to TextTiling only."
+                )
+                self._use_gemini = False
+        else:
+            self._use_gemini = False
 
     def find_clips(
         self,
@@ -109,7 +149,7 @@ class ClipFinder:
             sentences.append(sentence_info["sentence"])
 
         # embed sentences
-        text_embedder = TextEmbedder()
+        text_embedder = TextEmbedder(model_name=self._embedding_model)
         sentence_embeddings = text_embedder.embed_sentences(sentences)
 
         # add full media as clip
@@ -160,6 +200,41 @@ class ClipFinder:
                 self._max_clip_duration,
                 clips,
             )
+
+        # Geminiを使用する場合
+        if self._use_gemini:
+            try:
+                gemini_boundaries = self._gemini_finder.suggest_clip_boundaries(
+                    transcription.text,
+                    sentences_info,
+                    self._min_clip_duration,
+                    self._max_clip_duration,
+                )
+
+                # Geminiの提案をクリップ形式に変換
+                gemini_clips = self._convert_gemini_boundaries_to_clips(
+                    gemini_boundaries,
+                    transcription,
+                )
+
+                # TextTilingとGeminiの結果を統合
+                clips = self._merge_clip_proposals(
+                    clips,  # TextTilingの結果
+                    gemini_clips,  # Geminiの結果
+                    self._gemini_priority,
+                )
+
+                logger.info(
+                    f"Combined {len(clips)} clips from TextTiling and Gemini "
+                    f"(Gemini suggested {len(gemini_clips)} clips)"
+                )
+
+            except Exception as e:
+                logger.error(
+                    f"Gemini processing failed: {e}. "
+                    "Using TextTiling results only."
+                )
+                # Gemini失敗時はTextTilingの結果のみを使用
 
         clip_objects = []
         for clip_info in clips:
@@ -369,6 +444,179 @@ class ClipFinder:
                 return True
 
         return False
+
+    def _convert_gemini_boundaries_to_clips(
+        self,
+        gemini_boundaries: List[dict],
+        transcription: Transcription,
+    ) -> List[dict]:
+        """
+        Geminiの境界提案をクリップ形式に変換
+
+        Parameters
+        ----------
+        gemini_boundaries: List[dict]
+            Gemini APIから返された境界提案リスト
+        transcription: Transcription
+            文字起こしオブジェクト
+
+        Returns
+        -------
+        List[dict]
+            クリップ形式の辞書リスト
+        """
+        clips = []
+        for boundary in gemini_boundaries:
+            start_time = boundary.get("start_time", 0)
+            end_time = boundary.get("end_time", 0)
+
+            # 時間制約をチェック
+            duration = end_time - start_time
+            if duration < self._min_clip_duration or duration > self._max_clip_duration:
+                continue
+
+            # 時間から文字インデックスを取得
+            try:
+                start_char_index = transcription.find_char_index(
+                    start_time, type_of_time="start"
+                )
+                end_char_index = transcription.find_char_index(
+                    end_time, type_of_time="end"
+                )
+            except Exception as e:
+                logger.warning(
+                    f"Failed to convert time to char index for "
+                    f"clip ({start_time:.2f}s - {end_time:.2f}s): {e}"
+                )
+                continue
+
+            clips.append(
+                {
+                    "start_time": start_time,
+                    "end_time": end_time,
+                    "start_char": start_char_index,
+                    "end_char": end_char_index,
+                    "norm": 1.0,
+                    "source": "gemini",  # ソースを記録
+                }
+            )
+
+        return clips
+
+    def _merge_clip_proposals(
+        self,
+        texttiling_clips: List[dict],
+        gemini_clips: List[dict],
+        gemini_priority: float,
+    ) -> List[dict]:
+        """
+        TextTilingとGeminiの提案を統合
+
+        Parameters
+        ----------
+        texttiling_clips: List[dict]
+            TextTilingアルゴリズムで検出されたクリップリスト
+        gemini_clips: List[dict]
+            Gemini APIで提案されたクリップリスト
+        gemini_priority: float
+            Geminiの提案の重み（0.0-1.0）
+
+        Returns
+        -------
+        List[dict]
+            統合されたクリップリスト
+        """
+        if gemini_priority == 0.0:
+            return texttiling_clips
+        if gemini_priority == 1.0:
+            return gemini_clips
+
+        # 重複を除去してマージ
+        merged_clips = []
+
+        # TextTilingのクリップを追加
+        for clip in texttiling_clips:
+            clip_with_weight = clip.copy()
+            clip_with_weight["weight"] = 1.0 - gemini_priority
+            merged_clips.append(clip_with_weight)
+
+        # Geminiのクリップを追加（重複チェック）
+        for gemini_clip in gemini_clips:
+            # 時間範囲が重複するクリップをチェック
+            is_duplicate = False
+            for existing_clip in merged_clips:
+                overlap = self._calculate_overlap(
+                    gemini_clip["start_time"],
+                    gemini_clip["end_time"],
+                    existing_clip["start_time"],
+                    existing_clip["end_time"],
+                )
+                if overlap > 0.8:  # 80%以上重複している場合は重複とみなす
+                    is_duplicate = True
+                    # 重複している場合は、重み付き平均で更新
+                    existing_weight = existing_clip["weight"]
+                    total_weight = existing_weight + gemini_priority
+
+                    existing_clip["start_time"] = (
+                        existing_clip["start_time"] * existing_weight
+                        + gemini_clip["start_time"] * gemini_priority
+                    ) / total_weight
+                    existing_clip["end_time"] = (
+                        existing_clip["end_time"] * existing_weight
+                        + gemini_clip["end_time"] * gemini_priority
+                    ) / total_weight
+                    existing_clip["weight"] = 1.0
+                    break
+
+            if not is_duplicate:
+                gemini_clip_with_weight = gemini_clip.copy()
+                gemini_clip_with_weight["weight"] = gemini_priority
+                merged_clips.append(gemini_clip_with_weight)
+
+        # 重みを削除して返す
+        return [
+            {k: v for k, v in clip.items() if k != "weight"}
+            for clip in merged_clips
+        ]
+
+    def _calculate_overlap(
+        self,
+        start1: float,
+        end1: float,
+        start2: float,
+        end2: float,
+    ) -> float:
+        """
+        2つの時間範囲の重複率を計算（0.0-1.0）
+
+        Parameters
+        ----------
+        start1: float
+            最初のクリップの開始時間（秒）
+        end1: float
+            最初のクリップの終了時間（秒）
+        start2: float
+            2番目のクリップの開始時間（秒）
+        end2: float
+            2番目のクリップの終了時間（秒）
+
+        Returns
+        -------
+        float
+            重複率（0.0-1.0）。0.0は重複なし、1.0は完全に重複
+        """
+        overlap_start = max(start1, start2)
+        overlap_end = min(end1, end2)
+        if overlap_end <= overlap_start:
+            return 0.0
+
+        overlap_duration = overlap_end - overlap_start
+        duration1 = end1 - start1
+        duration2 = end2 - start2
+
+        # 2つのクリップの平均長さに対する重複率
+        avg_duration = (duration1 + duration2) / 2
+        return overlap_duration / avg_duration if avg_duration > 0 else 0.0
 
 
 class ClipFinderConfigManager(TextTilerConfigManager):

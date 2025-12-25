@@ -21,6 +21,18 @@ from clipsai_jp import ClipFinder, Transcriber, MediaEditor, AudioVideoFile
 
 # 動画ファイルのパス（絶対パスを指定してください）
 import os
+
+# .envファイルから環境変数を読み込む（オプション）
+# python-dotenvパッケージが必要: pip install python-dotenv
+try:
+    from dotenv import load_dotenv
+
+    # サンプルディレクトリの.envファイルを読み込む
+    env_path = os.path.join(os.path.dirname(__file__), ".env")
+    load_dotenv(env_path)
+except ImportError:
+    # python-dotenvがインストールされていない場合は環境変数のみを使用
+    pass
 video_file_path = os.path.join(os.path.dirname(__file__), "video.mp4")
 
 # 出力ディレクトリ（必要に応じて変更してください）
@@ -48,7 +60,50 @@ print(f"  テキスト形式: {text_file_path}")
 
 # 2. クリップファインダーを作成してクリップを見つける
 print("\nクリップを検索しています...")
-clipfinder = ClipFinder()
+
+# デフォルト設定（15秒〜15分のクリップ）
+# clipfinder = ClipFinder()
+
+# ショート動画（最大60秒）向けの設定例:
+# clipfinder = ClipFinder(
+#     min_clip_duration=10,      # 最小10秒
+#     max_clip_duration=60,      # 最大60秒（ショート動画）
+#     cutoff_policy="average",   # "high"（厳しい）→ "average"（標準）→ "low"（緩い）
+#     embedding_model="japanese",  # 日本語最適化モデル（精度向上）
+# )
+
+# より高精度なモデルを使用する場合:
+# clipfinder = ClipFinder(
+#     min_clip_duration=10,
+#     max_clip_duration=60,
+#     cutoff_policy="average",
+#     embedding_model="high_accuracy",  # または "intfloat/multilingual-e5-base"
+# )
+
+# Gemini APIを使用してクリップ検出精度を向上させる場合:
+# 事前に環境変数 GEMINI_API_KEY を設定するか、gemini_api_key パラメータで指定
+# 
+# 【方法1】.envファイルを使用（推奨）
+# sample/.env ファイルを作成して以下の内容を記述:
+#   GEMINI_API_KEY=your_api_key_here
+# python-dotenvが必要: pip install python-dotenv
+#
+# 【方法2】環境変数として設定
+# export GEMINI_API_KEY="your_api_key_here"  # Linux/Mac
+# $env:GEMINI_API_KEY="your_api_key_here"     # Windows PowerShell
+#
+# APIキーの取得方法: https://aistudio.google.com/app/apikey
+clipfinder = ClipFinder(
+    min_clip_duration=10,
+    max_clip_duration=60,
+    cutoff_policy="average",
+    embedding_model="japanese",
+    use_gemini=True,  # Gemini APIを使用
+    gemini_api_key=os.getenv("GEMINI_API_KEY"),  # 環境変数から取得（推奨）
+    gemini_model="gemini-2.5-flash",  # または "gemini-2.5-pro"（高精度）
+    gemini_priority=0.7,  # Geminiの提案を70%重視（0.0=TextTilingのみ, 1.0=Geminiのみ）
+)
+
 clips = clipfinder.find_clips(transcription=transcription)
 
 # 3. 見つかったクリップの情報を表示

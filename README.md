@@ -46,6 +46,44 @@ print("StartTime: ", clips[0].start_time)
 print("EndTime: ", clips[0].end_time)
 ```
 
+**ショート動画（最大60秒）向けの設定:**
+
+```python
+# ショート動画用の推奨設定（日本語最適化モデル使用）
+clipfinder = ClipFinder(
+    min_clip_duration=10,
+    max_clip_duration=60,
+    cutoff_policy="average",
+    embedding_model="japanese",  # 日本語最適化モデル（精度向上）
+)
+clips = clipfinder.find_clips(transcription=transcription)
+```
+
+**Gemini APIを使用して精度を向上させる場合:**
+
+```python
+import os
+
+# 環境変数 GEMINI_API_KEY を設定
+# export GEMINI_API_KEY="your_api_key_here"  # Linux/Mac
+# $env:GEMINI_API_KEY="your_api_key_here"     # Windows PowerShell
+
+# Gemini APIを使用した高精度なクリップ検出
+clipfinder = ClipFinder(
+    min_clip_duration=10,
+    max_clip_duration=60,
+    cutoff_policy="average",
+    embedding_model="japanese",
+    use_gemini=True,  # Gemini APIを使用
+    gemini_api_key=os.getenv("GEMINI_API_KEY"),  # 環境変数から取得（推奨）
+    gemini_model="gemini-2.5-flash",  # または "gemini-2.5-pro"（高精度）
+    gemini_priority=0.7,  # Geminiの提案を70%重視（0.0=TextTilingのみ, 1.0=Geminiのみ）
+)
+clips = clipfinder.find_clips(transcription=transcription)
+```
+
+> **注意:** Gemini APIキーは[Google AI Studio](https://aistudio.google.com/app/apikey)で無料で取得できます。
+
 文字起こしは[faster-whisper](https://github.com/guillaumekln/faster-whisper)を使用して行われます。
 
 ### 動画のリサイズ
