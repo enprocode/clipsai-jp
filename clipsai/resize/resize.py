@@ -48,10 +48,11 @@ def resize(
     face_detect_width: int
         The width in pixels to which the video will be downscaled for face detection.
     face_detect_margin: int
-        Margin around detected faces, used in the MTCNN face detector.
+        Margin around detected faces, used in the MediaPipe Face Detection.
     face_detect_post_process: bool
-        If set to True, post-processing is applied to the face detection output to make
-        it appear more natural.
+        This parameter is kept for backward compatibility but is not used with
+        MediaPipe Face Detection. MediaPipe does not support post-processing in the same
+        way as the previous MTCNN face detector.
     n_face_detect_batches: int
         Number of batches for processing face detection when using GPUs.
     min_scene_duration: float

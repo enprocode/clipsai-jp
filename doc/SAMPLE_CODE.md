@@ -150,6 +150,99 @@ python sample/complete_example.py
 3. **Pyannoteアクセストークン（リサイズ機能を使用する場合）**
    - https://huggingface.co/pyannote/speaker-diarization-3.0 でトークンを取得
 
+## オプショナル依存関係
+
+ClipsAIには、オプショナルな依存関係がいくつかあります。これらは通常の使用には必要ありませんが、特定の機能を使用する場合や開発を行う場合に必要になります。
+
+### GPUメモリ監視機能（`clipsai[gpu]`）
+
+GPUメモリの詳細な統計情報を取得する場合にインストールします：
+
+```bash
+pip install clipsai[gpu]
+```
+
+このオプションには以下のパッケージが含まれます：
+- `pynvml`: NVIDIA GPUメモリ監視
+
+**注意**: `pynvml`がインストールされていない場合でも、基本的なGPUメモリ情報は`torch.cuda`を使用して取得されます。
+
+### 開発・テスト用パッケージ（`clipsai[dev]`）
+
+開発やテストを行う場合にインストールします：
+
+```bash
+pip install clipsai[dev]
+```
+
+このオプションには以下のパッケージが含まれます：
+- `pytest`: テストフレームワーク
+- `pandas`: テスト用データ処理
+- `matplotlib`: 開発用可視化
+- `black`, `flake8`: コードフォーマッターとリンター
+- その他の開発ツール
+
+### 複数のオプションを同時にインストール
+
+複数のオプションを同時にインストールする場合：
+
+```bash
+pip install clipsai[gpu,dev]
+```
+
+## 依存関係のトラブルシューティング
+
+### 依存関係の競合エラーが発生した場合
+
+インストール時に依存関係の競合エラーが表示される場合、以下の手順で解決できます：
+
+#### 1. 仮想環境を再作成（推奨）
+
+```bash
+# 仮想環境を削除
+deactivate
+rm -rf venv  # Mac/Linux
+rmdir /s venv  # Windows
+
+# 新しい仮想環境を作成
+python -m venv venv
+venv\Scripts\activate  # Windows
+source venv/bin/activate  # Mac/Linux
+
+# 依存関係を再インストール
+pip install --upgrade pip
+pip install -e .
+```
+
+#### 2. 互換性のあるバージョンを明示的にインストール
+
+```bash
+# numpy と torch を互換性のあるバージョンに固定
+pip install "numpy>=1.24.0,<2.0.0" "torch>=2.2.0,<2.3.0" "torchvision>=0.17.0,<0.18.0"
+
+# その後、clipsaiを再インストール
+pip install -e .
+```
+
+#### 3. 既存のパッケージをアンインストールして再インストール
+
+```bash
+# 競合しているパッケージをアンインストール
+pip uninstall numpy torch torchvision facenet-pytorch -y
+
+# 互換性のあるバージョンをインストール
+pip install "numpy>=1.24.0,<2.0.0" "torch>=2.2.0,<2.3.0" "torchvision>=0.17.0,<0.18.0"
+
+# clipsaiを再インストール
+pip install -e .
+```
+
+### よくあるエラー
+
+- **`numpy` のバージョン競合**: 以前は `facenet-pytorch` が `numpy<2.0.0` を要求していましたが、現在は MediaPipe Face Detection を使用しているため、最新版の `numpy` を使用できます
+- **`torch` のバージョン競合**: 以前は `facenet-pytorch` が `torch<2.3.0,>=2.2.0` を要求していましたが、現在は最新版の `torch` を使用できます
+- **`torchvision` のバージョン競合**: `torchvision` は対応する `torch` のバージョンと一致する必要があります
+
 ## 注意事項
 
 - すべてのサンプルコードで、`video_file_path` を実際の動画ファイルのパスに変更してください
