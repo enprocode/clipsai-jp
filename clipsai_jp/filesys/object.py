@@ -10,7 +10,7 @@ import os
 from .exceptions import FileSystemObjectError
 
 # local imports
-from clipsai.utils.type_checker import TypeChecker
+from clipsai_jp.utils.type_checker import TypeChecker
 
 
 class FileSystemObject:

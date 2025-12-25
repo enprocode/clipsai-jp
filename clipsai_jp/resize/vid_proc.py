@@ -10,7 +10,7 @@ from .exceptions import VideoProcessingError
 from .img_proc import rgb_to_gray
 
 # local imports
-from clipsai.media.video_file import VideoFile
+from clipsai_jp.media.video_file import VideoFile
 
 # third party imports
 import av

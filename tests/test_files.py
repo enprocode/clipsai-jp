@@ -11,14 +11,14 @@ TestFiles: A class for retrieving test files and their paths
 import os
 
 # local imports
-from clipsai.filesys.dir import Dir
-from clipsai.filesys.json_file import JSONFile
-from clipsai.media.audio_file import AudioFile
-from clipsai.media.audiovideo_file import AudioVideoFile
-from clipsai.media.image_file import ImageFile
-from clipsai.media.media_file import MediaFile
-from clipsai.media.temporal_media_file import TemporalMediaFile
-from clipsai.media.video_file import VideoFile
+from clipsai_jp.filesys.dir import Dir
+from clipsai_jp.filesys.json_file import JSONFile
+from clipsai_jp.media.audio_file import AudioFile
+from clipsai_jp.media.audiovideo_file import AudioVideoFile
+from clipsai_jp.media.image_file import ImageFile
+from clipsai_jp.media.media_file import MediaFile
+from clipsai_jp.media.temporal_media_file import TemporalMediaFile
+from clipsai_jp.media.video_file import VideoFile
 
 
 class TestFiles:

@@ -16,14 +16,14 @@ import logging
 from .exceptions import TextTilerError
 
 # local package imports
-from clipsai.filesys.manager import FileSystemManager
-from clipsai.utils.config_manager import ConfigManager
-from clipsai.utils.pytorch import (
+from clipsai_jp.filesys.manager import FileSystemManager
+from clipsai_jp.utils.config_manager import ConfigManager
+from clipsai_jp.utils.pytorch import (
     max_magnitude_2d,
     get_compute_device,
     assert_compute_device_available,
 )
-from clipsai.utils.utils import find_missing_dict_keys
+from clipsai_jp.utils.utils import find_missing_dict_keys
 
 # 3rd party imports
 import numpy

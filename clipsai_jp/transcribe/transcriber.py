@@ -16,12 +16,12 @@ from .exceptions import TranscriberConfigError
 from .transcription import Transcription
 
 # local imports
-from clipsai.media.audio_file import AudioFile
-from clipsai.media.editor import MediaEditor
-from clipsai.utils.config_manager import ConfigManager
-from clipsai.utils.pytorch import assert_valid_torch_device, get_compute_device
-from clipsai.utils.type_checker import TypeChecker
-from clipsai.utils.utils import find_missing_dict_keys
+from clipsai_jp.media.audio_file import AudioFile
+from clipsai_jp.media.editor import MediaEditor
+from clipsai_jp.utils.config_manager import ConfigManager
+from clipsai_jp.utils.pytorch import assert_valid_torch_device, get_compute_device
+from clipsai_jp.utils.type_checker import TypeChecker
+from clipsai_jp.utils.utils import find_missing_dict_keys
 
 # third party imports
 import torch

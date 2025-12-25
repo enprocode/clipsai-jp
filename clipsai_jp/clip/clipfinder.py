@@ -12,9 +12,9 @@ from .texttiler import TextTiler
 from .texttiler import TextTilerConfigManager
 
 # local package imports
-from clipsai.transcribe.transcription import Transcription
-from clipsai.utils.pytorch import get_compute_device, assert_compute_device_available
-from clipsai.utils.utils import find_missing_dict_keys
+from clipsai_jp.transcribe.transcription import Transcription
+from clipsai_jp.utils.pytorch import get_compute_device, assert_compute_device_available
+from clipsai_jp.utils.utils import find_missing_dict_keys
 
 # 3rd party imports
 import torch
