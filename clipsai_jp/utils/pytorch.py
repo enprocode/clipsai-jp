@@ -299,10 +299,10 @@ def mem_stats() -> dict:
             logging.debug("pynvml not installed. Using torch.cuda for GPU memory stats.")
             if torch.cuda.is_available():
                 total_gpu_memory = torch.cuda.get_device_properties(0).total_memory
-                # torch.cuda.memory_reserved()は確保済みメモリなので、使用可能メモリを計箁E
-                reserved = torch.cuda.memory_reserved(0)
+                # torch.cuda.memory_allocated()は実際に使用されているメモリを返す
+                # 空きメモリ = 総メモリ - 実際に使用されているメモリ
                 allocated = torch.cuda.memory_allocated(0)
-                free_gpu_memory = total_gpu_memory - reserved
+                free_gpu_memory = total_gpu_memory - allocated
 
     # get free cpu memory
     total_cpu_memory = psutil.virtual_memory().total
