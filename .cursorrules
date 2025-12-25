@@ -36,21 +36,22 @@
 ### 4. 型ヒント
 - **型アノテーション**: 可能な限り型ヒントを追加
 - **戻り値の型**: 関数の戻り値の型を明示
-- **Optional/Union**: 適切に使用
+- **Optional/Union**: 適切に使用（Python 3.10+では`X | None`形式も可）
 
 ### 5. ドキュメント
 - **docstring**: すべての公開クラス・関数にdocstringを追加
-- **docstring形式**: GoogleスタイルまたはNumPyスタイル
-- **パラメータ説明**: すべてのパラメータを説明
-- **戻り値の説明**: 戻り値の型と意味を説明
-- **使用例**: 複雑な関数には使用例を含める
+- **docstring形式**: NumPyスタイル（Parameters, Returnsセクションを使用）
+- **パラメータ説明**: すべてのパラメータを説明（`Parameters`セクションで型と説明を記載）
+- **戻り値の説明**: 戻り値の型と意味を説明（`Returns`セクションで記載）
+- **使用例**: 複雑な関数には使用例を含める（`Notes`セクションを使用可）
 
 ### 6. テスト
 - **テストカバレッジ**: 新機能には対応するテストを追加
 - **テスト名**: `test_`で始まり、何をテストしているか明確に
 - **テストの独立性**: 各テストは独立して実行可能
-- **モックの使用**: 外部依存関係は適切にモック
+- **モックの使用**: 外部依存関係は適切にモック（パッチパスは`clipsai_jp.`で始める）
 - **テストデータ**: テスト用のデータは`tests/`ディレクトリに配置
+- **CI環境**: CI環境でもテストが正常に動作することを確認（NLTKリソースの自動ダウンロードなど）
 
 ### 7. 依存関係
 - **NLTKリソース**: `punkt`と`punkt_tab`の両方をダウンロードする処理を含める
@@ -119,6 +120,7 @@ patch("clipsai_jp.utils.pytorch.get_free_cpu_memory")
 ### 問題2: NLTKリソースのダウンロード
 ```python
 # ✅ 正しい実装
+# NLTK 3.8以降ではpunkt_tabが必要だが、後方互換性のためpunktもダウンロード
 try:
     nltk.download("punkt", quiet=True)
 except Exception:
@@ -136,6 +138,15 @@ with patch("clipsai.media.temporal_media_file.TemporalMediaFile.has_audio_stream
 
 # ✅ 正しい
 with patch("clipsai_jp.media.temporal_media_file.TemporalMediaFile.has_audio_stream"):
+```
+
+### 問題4: テストでのユーティリティモジュールのパッチパス
+```python
+# ❌ 間違い（utilsモジュールが見つからない）
+with patch("utils.pytorch.get_free_cpu_memory", return_value=8000000000):
+
+# ✅ 正しい
+with patch("clipsai_jp.utils.pytorch.get_free_cpu_memory", return_value=8000000000):
 ```
 
 ## コードレビューの優先順位
