@@ -1054,7 +1054,7 @@ class Resizer:
 
     def cleanup(self) -> None:
         """
-        Remove the face detector from memory and explicity free up GPU memory.
+        Remove the face detector and face mesher from memory and explicity free up GPU memory.
         """
         if hasattr(self, '_face_detector') and self._face_detector is not None:
             try:
@@ -1063,5 +1063,12 @@ class Resizer:
                 # MediaPipe Face Detection may not have close() method in some versions
                 pass
             self._face_detector = None
+        if hasattr(self, '_face_mesher') and self._face_mesher is not None:
+            try:
+                self._face_mesher.close()
+            except AttributeError:
+                # MediaPipe FaceMesh may not have close() method in some versions
+                pass
+            self._face_mesher = None
         if torch.cuda.is_available():
             torch.cuda.empty_cache()

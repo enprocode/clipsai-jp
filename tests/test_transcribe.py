@@ -23,12 +23,6 @@ def media_editor():
 
 
 @pytest.fixture
-def mock_whisperx_transcriber():
-    with patch("transcribe.transcribe.WhisperXTranscriber") as mock:
-        yield mock
-
-
-@pytest.fixture
 def mock_media_editor():
     with patch("clipsai_jp.transcribe.transcriber.MediaEditor") as mock:
         yield mock
