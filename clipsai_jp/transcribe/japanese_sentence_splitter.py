@@ -10,11 +10,11 @@ import re
 from typing import List, Optional
 
 try:
-    import MeCab
+    import MeCab  # type: ignore
     MECAB_AVAILABLE = True
 except ImportError:
     MECAB_AVAILABLE = False
-    MeCab = None
+    MeCab = None  # type: ignore
 
 logger = logging.getLogger(__name__)
 
@@ -100,6 +100,7 @@ class JapaneseSentenceSplitter:
         sentence_endings = r'[。！？\n]'
 
         # 句読点の位置を保持しながら分割
+        # 元の文字列の部分文字列をそのまま保持する（空白も含む）
         sentences = []
         current_sentence = ""
 
@@ -112,22 +113,25 @@ class JapaneseSentenceSplitter:
             if re.match(sentence_endings, char):
                 # MeCabで形態素解析して、文の品質を確認
                 if self._is_valid_sentence_end(current_sentence, text, i):
+                    # 元の文字列の部分文字列をそのまま追加（空白も含む）
                     sentences.append(current_sentence)
                     current_sentence = ""
                 # 文の終わりでない場合は続ける（例：「。」が引用符内にある場合）
 
             i += 1
 
-        # 最後の文を追加
-        if current_sentence.strip():
+        # 最後の文を追加（空白文字のみの場合は除外）
+        # current_sentence.strip()で判定するが、結果には元の文字列をそのまま追加
+        if current_sentence and current_sentence.strip():
             sentences.append(current_sentence)
 
-        # 空の文を除去
-        result = [s.strip() for s in sentences if s.strip()]
+        # 空の文（空白文字のみ）を除去
+        # strip()は使わず、元の文字列の部分文字列をそのまま保持
+        result = [s for s in sentences if s.strip()]
 
-        # 結果が空の場合は、元のテキストをそのまま返す
+        # 結果が空の場合は、元のテキストをそのまま返す（strip()は使わない）
         if not result:
-            return [text.strip()] if text.strip() else []
+            return [text] if text.strip() else []
 
         return result
 
