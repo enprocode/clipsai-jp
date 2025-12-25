@@ -2,14 +2,14 @@ import pytest
 from unittest.mock import patch
 from datetime import datetime
 
-from clipsai.filesys.json_file import JSONFile
-from clipsai.media.audio_file import AudioFile
-from clipsai.media.audiovideo_file import AudioVideoFile
-from clipsai.media.editor import MediaEditor
-from clipsai.media.exceptions import MediaEditorError
-from clipsai.transcribe.exceptions import TranscriptionError
-from clipsai.transcribe.transcriber import TranscriberConfigManager
-from clipsai.transcribe.transcription import Transcription
+from clipsai_jp.filesys.json_file import JSONFile
+from clipsai_jp.media.audio_file import AudioFile
+from clipsai_jp.media.audiovideo_file import AudioVideoFile
+from clipsai_jp.media.editor import MediaEditor
+from clipsai_jp.media.exceptions import MediaEditorError
+from clipsai_jp.transcribe.exceptions import TranscriptionError
+from clipsai_jp.transcribe.transcriber import TranscriberConfigManager
+from clipsai_jp.transcribe.transcription import Transcription
 
 
 @pytest.fixture
@@ -23,14 +23,8 @@ def media_editor():
 
 
 @pytest.fixture
-def mock_whisperx_transcriber():
-    with patch("transcribe.transcribe.WhisperXTranscriber") as mock:
-        yield mock
-
-
-@pytest.fixture
 def mock_media_editor():
-    with patch("transcribe.transcribe.MediaEditor") as mock:
+    with patch("clipsai_jp.transcribe.transcriber.MediaEditor") as mock:
         yield mock
 
 
@@ -45,42 +39,42 @@ def test_assert_valid_config(transcriber_config_manager: TranscriberConfigManage
 
 
 # Testing MediaEditor
-@patch("media.temporal_media_file.TemporalMediaFile.assert_exists")
+@patch("clipsai_jp.media.temporal_media_file.TemporalMediaFile.assert_exists")
 def test_instantiate_as_audio_file(mock_assert_exists, media_editor: MediaEditor):
     mock_assert_exists.return_value = None
     with patch(
-        "media.temporal_media_file.TemporalMediaFile.has_audio_stream",
+        "clipsai_jp.media.temporal_media_file.TemporalMediaFile.has_audio_stream",
         return_value=True,
     ), patch(
-        "media.temporal_media_file.TemporalMediaFile.has_video_stream",
+        "clipsai_jp.media.temporal_media_file.TemporalMediaFile.has_video_stream",
         return_value=False,
     ):
         result = media_editor.instantiate_as_temporal_media_file("path/to/audio.mp3")
     assert isinstance(result, AudioFile)
 
 
-@patch("media.temporal_media_file.TemporalMediaFile.assert_exists")
+@patch("clipsai_jp.media.temporal_media_file.TemporalMediaFile.assert_exists")
 def test_instantiate_as_audio_video_file(mock_assert_exists, media_editor: MediaEditor):
     mock_assert_exists.return_value = None
     with patch(
-        "media.temporal_media_file.TemporalMediaFile.has_audio_stream",
+        "clipsai_jp.media.temporal_media_file.TemporalMediaFile.has_audio_stream",
         return_value=True,
     ), patch(
-        "media.temporal_media_file.TemporalMediaFile.has_video_stream",
+        "clipsai_jp.media.temporal_media_file.TemporalMediaFile.has_video_stream",
         return_value=True,
     ):
         result = media_editor.instantiate_as_temporal_media_file("path/to/video.mp4")
     assert isinstance(result, AudioVideoFile)
 
 
-@patch("media.temporal_media_file.TemporalMediaFile.assert_exists")
+@patch("clipsai_jp.media.temporal_media_file.TemporalMediaFile.assert_exists")
 def test_instantiate_invalid_file(mock_assert_exists, media_editor: MediaEditor):
     mock_assert_exists.return_value = None
     with patch(
-        "media.temporal_media_file.TemporalMediaFile.has_audio_stream",
+        "clipsai_jp.media.temporal_media_file.TemporalMediaFile.has_audio_stream",
         return_value=False,
     ), patch(
-        "media.temporal_media_file.TemporalMediaFile.has_video_stream",
+        "clipsai_jp.media.temporal_media_file.TemporalMediaFile.has_video_stream",
         return_value=False,
     ):
         with pytest.raises(MediaEditorError):
@@ -140,12 +134,12 @@ def test_store_as_json_file():
     mock_json_file = JSONFile("path/to/output.json")
     transcription = Transcription(valid_transcription_data)
 
-    with patch("filesys.json_file.JSONFile.assert_has_file_extension"), patch(
-        "filesys.manager.FileSystemManager.assert_parent_dir_exists"
-    ), patch("filesys.json_file.JSONFile.delete"), patch(
-        "filesys.json_file.JSONFile.create", return_value=mock_json_file
+    with patch("clipsai_jp.filesys.json_file.JSONFile.assert_has_file_extension"), patch(
+        "clipsai_jp.filesys.manager.FileSystemManager.assert_parent_dir_exists"
+    ), patch("clipsai_jp.filesys.json_file.JSONFile.delete"), patch(
+        "clipsai_jp.filesys.json_file.JSONFile.create", return_value=mock_json_file
     ), patch(
-        "filesys.json_file.JSONFile.assert_exists"
+        "clipsai_jp.filesys.json_file.JSONFile.assert_exists"
     ):
         json_file = transcription.store_as_json_file("path/to/output.json")
 
