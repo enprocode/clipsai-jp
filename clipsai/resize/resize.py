@@ -51,8 +51,7 @@ def resize(
         Margin around detected faces, used in the MediaPipe Face Detection.
     face_detect_post_process: bool
         This parameter is kept for backward compatibility but is not used with
-        MediaPipe Face Detection. MediaPipe does not support post-processing in the same
-        way as the previous MTCNN face detector.
+        MediaPipe Face Detection.
     n_face_detect_batches: int
         Number of batches for processing face detection when using GPUs.
     min_scene_duration: float

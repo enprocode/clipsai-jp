@@ -2,7 +2,6 @@ from setuptools import find_packages, setup  # type: ignore
 
 setup(
     name="clipsai-jp",
-    py_modules=["clipsai"],
     version="1.0.0",
     description=(
         "Clips AIは、長い動画を自動的にクリップに変換するオープンソースのPythonライブラリです（日本語専用版）"
@@ -39,7 +38,8 @@ setup(
         "pyannote.core>=5.0.0,<7.0.0",
         
         # 顔検出・ランドマーク
-        "mediapipe>=0.10.20,<0.11.0",
+        # MediaPipe 0.10.31ではsolutions APIが削除されているため、0.10.20に固定
+        "mediapipe==0.10.20",
         
         # 自然言語処理
         "nltk>=3.8.0,<4.0.0",
@@ -53,7 +53,6 @@ setup(
     python_requires=">=3.9",
     classifiers=[
         "Programming Language :: Python :: 3",
-        "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
     ],
     project_urls={
