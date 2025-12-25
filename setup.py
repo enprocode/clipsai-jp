@@ -15,25 +15,33 @@ setup(
     license="MIT",
     packages=find_packages(exclude=["tests*"]),
     install_requires=[
+        # コア依存関係（最小限）
+        "numpy>=1.24.0",  # facenet-pytorch制約を削除、最新版使用可能
+        "torch>=2.2.0",  # facenet-pytorch制約を削除、最新版使用可能
+        
+        # 音声/動画処理
         "av>=11.0.0,<17.0.0",
-        "facenet-pytorch>=2.5.0,<3.0.0",
-        "matplotlib>=3.8.0,<4.0.0",
-        "mediapipe>=0.10.20,<0.11.0",
-        "nltk>=3.8.0,<4.0.0",
-        "numpy>=1.21.0,<3.0.0",
         "opencv-python>=4.5.0,<5.0.0",
-        "pandas>=2.0.0,<3.0.0",
-        "psutil>=5.9.0,<8.0.0",
+        "scenedetect>=0.6.5,<0.7.0",
+        
+        # 機械学習（必須）
+        "sentence-transformers>=3.0.0,<6.0.0",
+        "scikit-learn>=1.3.0,<2.0.0",
+        
+        # 話者分離
         "pyannote.audio>=3.3.0,<5.0.0",
         "pyannote.core>=5.0.0,<7.0.0",
-        "pynvml>=11.0.0,<14.0.0",
-        "pytest>=7.0.0,<9.0.0",
+        
+        # 顔検出・ランドマーク
+        "mediapipe>=0.10.20,<0.11.0",
+        
+        # 自然言語処理
+        "nltk>=3.8.0,<4.0.0",
+        
+        # ユーティリティ
+        "psutil>=5.9.0,<8.0.0",
         "python-magic>=0.4.20,<0.5.0",
-        "scenedetect>=0.6.5,<0.7.0",
-        "scikit-learn>=1.3.0,<2.0.0",
-        "sentence-transformers>=3.0.0,<6.0.0",
         "scipy>=1.9.0,<2.0.0",
-        "torch>=2.0.0,<3.0.0",
     ],
     zip_safe=False,
     python_requires=">=3.9",
@@ -50,13 +58,20 @@ setup(
     },
     include_package_data=True,
     extras_require={
+        # GPUメモリ監視（オプション）
+        "gpu": [
+            "pynvml>=11.0.0,<14.0.0",
+        ],
+        # 開発・テスト用
         "dev": [
             "black",
             "black[jupyter]",
             "build",
             "flake8",
             "ipykernel",
-            "pytest",
+            "pytest>=7.0.0,<9.0.0",
+            "pandas>=2.0.0,<3.0.0",  # テスト用
+            "matplotlib>=3.8.0,<4.0.0",  # 開発用
             "twine",
         ],
     },

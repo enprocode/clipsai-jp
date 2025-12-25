@@ -24,6 +24,18 @@ Clips AIは、長い動画を自動的にクリップに変換するオープン
     pip install whisperx@git+https://github.com/m-bain/whisperx.git
     ```
 
+    **オプショナル依存関係:**
+    
+    - **GPUメモリ監視機能を使用する場合:**
+      ```bash
+      pip install clipsai[gpu]
+      ```
+    
+    - **開発・テスト用パッケージをインストールする場合:**
+      ```bash
+      pip install clipsai[dev]
+      ```
+
 2. [libmagic](https://github.com/ahupp/python-magic?tab=readme-ov-file#debianubuntu)をインストールします
    - **Windows**: [python-magic-binaries](https://github.com/pidydx/libmagicwin64)からダウンロードするか、`pip install python-magic-bin`を使用
    - **Mac**: Homebrewでインストール: `brew install libmagic`

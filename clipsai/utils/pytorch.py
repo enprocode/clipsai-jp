@@ -10,7 +10,6 @@ from .exceptions import InvalidComputeDeviceError
 
 # 3rd party imports
 import psutil
-import pynvml
 import torch
 
 
@@ -288,11 +287,22 @@ def mem_stats() -> dict:
     free_gpu_memory = 0
     if torch.cuda.is_available():
         torch.cuda.empty_cache()
-        pynvml.nvmlInit()
-        h = pynvml.nvmlDeviceGetHandleByIndex(0)
-        info = pynvml.nvmlDeviceGetMemoryInfo(h)
-        total_gpu_memory = info.total
-        free_gpu_memory = info.free
+        try:
+            import pynvml
+            pynvml.nvmlInit()
+            h = pynvml.nvmlDeviceGetHandleByIndex(0)
+            info = pynvml.nvmlDeviceGetMemoryInfo(h)
+            total_gpu_memory = info.total
+            free_gpu_memory = info.free
+        except ImportError:
+            # pynvmlがインストールされていない場合のフォールバック
+            logging.debug("pynvml not installed. Using torch.cuda for GPU memory stats.")
+            if torch.cuda.is_available():
+                total_gpu_memory = torch.cuda.get_device_properties(0).total_memory
+                # torch.cuda.memory_reserved()は確保済みメモリなので、使用可能メモリを計算
+                reserved = torch.cuda.memory_reserved(0)
+                allocated = torch.cuda.memory_allocated(0)
+                free_gpu_memory = total_gpu_memory - reserved
 
     # get free cpu memory
     total_cpu_memory = psutil.virtual_memory().total

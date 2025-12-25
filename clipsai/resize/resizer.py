@@ -24,7 +24,6 @@ from clipsai.utils.conversions import bytes_to_gibibytes
 
 # 3rd party imports
 import cv2
-from facenet_pytorch import MTCNN
 import mediapipe as mp
 import numpy as np
 from sklearn.cluster import KMeans
@@ -45,8 +44,9 @@ class Resizer:
     ) -> None:
         """
         Initializes the Resizer with specific configurations for face
-        detection. This class uses FaceNet for detecting faces and MediaPipe for
-        analyzing mouth to aspect ratio to determine whose speaking within video frames.
+        detection. This class uses MediaPipe Face Detection for detecting faces and
+        MediaPipe Face Mesh for analyzing mouth to aspect ratio to determine whose
+        speaking within video frames.
 
         Parameters
         ----------
@@ -55,23 +55,25 @@ class Resizer:
             value results in a larger area around each detected face being included.
             Default is 20 pixels.
         face_detect_post_process: bool, optional
-            Determines whether to apply post-processing on the detected faces. Setting
-            this to False prevents normalization of output images, making them appear
-            more natural to the human eye. Default is False (no post-processing).
+            This parameter is kept for backward compatibility but is not used with
+            MediaPipe Face Detection. MediaPipe does not support post-processing in
+            the same way as MTCNN. Default is False.
         device: str, optional
             PyTorch device to perform computations on. Ex: 'cpu', 'cuda'. Default is
-            None (auto detects the correct device)
+            None (auto detects the correct device). Note: MediaPipe automatically uses
+            GPU if available, so this parameter mainly affects other PyTorch operations.
         """
         if device is None:
             device = pytorch.get_compute_device()
         pytorch.assert_compute_device_available(device)
-        logging.debug("FaceNet using device: {}".format(device))
+        logging.debug("MediaPipe Face Detection using device: {}".format(device))
 
-        self._face_detector = MTCNN(
-            margin=face_detect_margin,
-            post_process=face_detect_post_process,
-            device=device,
+        # MediaPipe Face Detectionを使用
+        self._face_detector = mp.solutions.face_detection.FaceDetection(
+            model_selection=1,  # 0=short-range, 1=full-range
+            min_detection_confidence=0.5
         )
+        self._face_detect_margin = face_detect_margin
         # media pipe automatically uses gpu if available
         self._face_mesher = mp.solutions.face_mesh.FaceMesh()
         self._media_editor = MediaEditor()
@@ -520,7 +522,7 @@ class Resizer:
         face_detect_width: int,
     ) -> list[np.ndarray]:
         """
-        Detect faces in a list of frames.
+        Detect faces in a list of frames using MediaPipe Face Detection.
 
         Parameters
         ----------
@@ -532,37 +534,61 @@ class Resizer:
         Returns
         -------
         list[np.ndarray]
-            The face detections for each frame.
+            The face detections for each frame. Each detection is a numpy array of
+            shape (N, 4) containing [x1, y1, x2, y2] coordinates in pixels, or None
+            if no faces are detected.
         """
         if len(frames) == 0:
             logging.debug("No frames to detect faces in.")
             return []
 
-        # resize the frames
         logging.debug("Detecting faces in {} frames.".format(len(frames)))
-        downsample_factor = max(frames[0].shape[1] / face_detect_width, 1)
-        detect_height = int(frames[0].shape[0] / downsample_factor)
-        resized_frames = []
-        for frame in frames:
-            resized_frame = cv2.resize(frame, (face_detect_width, detect_height))
-            if torch.cuda.is_available():
-                resized_frame = torch.from_numpy(resized_frame).to(
-                    device="cuda", dtype=torch.uint8
-                )
-            resized_frames.append(resized_frame)
-
-        # detect faces in batches
-        if torch.cuda.is_available():
-            resized_frames = torch.stack(resized_frames)
-        detections, _ = self._face_detector.detect(resized_frames)
-
-        # detections are returned as numpy arrays regardless
         face_detections = []
-        for detection in detections:
-            if detection is not None:
-                detection[detection < 0] = 0
-                detection = (detection * downsample_factor).astype(np.int16)
-            face_detections.append(detection)
+
+        for frame in frames:
+            # フレームをリサイズ（MediaPipe用）
+            downsample_factor = max(frame.shape[1] / face_detect_width, 1)
+            detect_height = int(frame.shape[0] / downsample_factor)
+            resized_frame = cv2.resize(frame, (face_detect_width, detect_height))
+
+            # RGBに変換（MediaPipeはRGBを要求）
+            rgb_frame = cv2.cvtColor(resized_frame, cv2.COLOR_BGR2RGB)
+
+            # 顔検出
+            results = self._face_detector.process(rgb_frame)
+
+            # 検出結果をMTCNN形式に変換
+            if results.detections:
+                detections = []
+                for detection in results.detections:
+                    bbox = detection.location_data.relative_bounding_box
+                    # 正規化座標をピクセル座標に変換
+                    x1 = int(bbox.xmin * face_detect_width)
+                    y1 = int(bbox.ymin * detect_height)
+                    x2 = int((bbox.xmin + bbox.width) * face_detect_width)
+                    y2 = int((bbox.ymin + bbox.height) * detect_height)
+
+                    # マージンを適用
+                    x1 = max(0, x1 - self._face_detect_margin)
+                    y1 = max(0, y1 - self._face_detect_margin)
+                    x2 = min(face_detect_width, x2 + self._face_detect_margin)
+                    y2 = min(detect_height, y2 + self._face_detect_margin)
+
+                    # 元の解像度にスケール
+                    x1 = int(x1 * downsample_factor)
+                    y1 = int(y1 * downsample_factor)
+                    x2 = int(x2 * downsample_factor)
+                    y2 = int(y2 * downsample_factor)
+
+                    detections.append(np.array([x1, y1, x2, y2]))
+
+                # MTCNN形式: (N, 4)の配列
+                if detections:
+                    face_detections.append(np.array(detections))
+                else:
+                    face_detections.append(None)
+            else:
+                face_detections.append(None)
 
         logging.debug("Detected faces in {} frames.".format(len(face_detections)))
         return face_detections
@@ -1028,7 +1054,12 @@ class Resizer:
         """
         Remove the face detector from memory and explicity free up GPU memory.
         """
-        del self._face_detector
-        self._face_detector = None
+        if hasattr(self, '_face_detector') and self._face_detector is not None:
+            try:
+                self._face_detector.close()
+            except AttributeError:
+                # MediaPipe Face Detection may not have close() method in some versions
+                pass
+            self._face_detector = None
         if torch.cuda.is_available():
             torch.cuda.empty_cache()
