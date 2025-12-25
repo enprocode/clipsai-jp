@@ -8,7 +8,7 @@ can be instantiated and work together correctly with updated dependencies.
 import pytest
 
 # local package imports
-from clipsai import ClipFinder, Transcriber, resize
+from clipsai_jp import ClipFinder, Transcriber, resize
 from clipsai.clip.clipfinder import ClipFinder as ClipFinderClass
 from clipsai.transcribe.transcriber import Transcriber as TranscriberClass
 from clipsai.resize.resize import resize as resize_function
@@ -115,7 +115,7 @@ class TestComponentIntegration:
 
     def test_all_main_classes_importable(self):
         """Test that all main classes can be imported successfully."""
-        from clipsai import (
+        from clipsai_jp import (
             ClipFinder,
             Transcriber,
             AudioFile,

@@ -34,7 +34,7 @@ pip install clipsai-jp
 ### クリップの作成
 
 ```python
-from clipsai import ClipFinder, Transcriber
+from clipsai_jp import ClipFinder, Transcriber
 
 transcriber = Transcriber()
 transcription = transcriber.transcribe(audio_file_path="/abs/path/to/video.mp4")
@@ -51,7 +51,7 @@ print("EndTime: ", clips[0].end_time)
 ### 動画のリサイズ
 
 ```python
-from clipsai import resize
+from clipsai_jp import resize
 
 crops = resize(
     video_file_path="/abs/path/to/video.mp4",
