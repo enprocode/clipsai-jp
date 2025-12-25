@@ -73,6 +73,23 @@
 - **Pythonバージョン**: Python 3.9以上で動作することを確認
 - **プラットフォーム**: Windows、Mac、Linuxで動作することを確認
 
+### 11. PyPI公開（パッケージ公開時）
+- **バージョン管理**: `setup.py`で一意のバージョンを指定（同じバージョンの再アップロードは不可）
+- **ビルドツール**: `build`と`twine`を使用（`pip install build twine`）
+- **TestPyPIでのテスト**: PyPI公開前にTestPyPIで動作確認する
+- **README.md**: PyPIプロジェクトページに表示されるため、適切に記述
+- **依存関係の指定**: `setup.py`の`install_requires`にすべて記載
+- **クリーンアップ**: 再ビルド前に`dist/`フォルダを削除
+- **認証情報**: `~/.pypirc`にAPIトークンを設定（任意だが推奨）
+
+#### PyPI公開前のチェックリスト
+- [ ] `setup.py`のバージョン番号が更新されている
+- [ ] `README.md`が適切に記述されている（PyPIページに表示される）
+- [ ] すべての依存関係が`setup.py`に記載されている
+- [ ] テストがすべてパスしている
+- [ ] `python -m build`で正常にビルドできる
+- [ ] TestPyPIでインストール・動作確認が完了している
+
 ## コードレビュー時の確認事項
 
 ### 必須チェック
@@ -83,6 +100,12 @@
 - [ ] docstringが追加されている（公開API）
 - [ ] 型ヒントが追加されている
 - [ ] `clipsai_jp`パッケージ名を使用している（`clipsai`ではない）
+
+### 必須チェック（パッケージ公開時）
+- [ ] `setup.py`のバージョン番号が一意である
+- [ ] `README.md`が適切に記述されている
+- [ ] すべての依存関係が`setup.py`に記載されている
+- [ ] TestPyPIでテストインストールが成功している
 
 ### 推奨チェック
 - [ ] パフォーマンスの最適化が検討されている
@@ -147,6 +170,25 @@ with patch("utils.pytorch.get_free_cpu_memory", return_value=8000000000):
 
 # ✅ 正しい
 with patch("clipsai_jp.utils.pytorch.get_free_cpu_memory", return_value=8000000000):
+```
+
+### 問題5: PyPI公開時のバージョンエラー
+```python
+# ❌ 間違い: 同じバージョンを再アップロードしようとする
+# setup.pyで version = "1.0.0" のまま再アップロード
+
+# ✅ 正しい: 必ずバージョン番号を更新
+# setup.pyで version = "1.0.1" に更新してからアップロード
+```
+
+### 問題6: README.mdの不足
+```python
+# ❌ 間違い: README.mdが存在しない、または不適切
+# PyPIページに説明が表示されない
+
+# ✅ 正しい: setup.pyでlong_descriptionを適切に設定
+long_description=open("README.md", encoding="utf-8").read(),
+long_description_content_type="text/markdown",
 ```
 
 ## コードレビューの優先順位
