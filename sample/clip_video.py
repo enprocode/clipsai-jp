@@ -4,17 +4,7 @@
 このサンプルでは、動画を文字起こしして、そのトランスクリプトから
 自動的にクリップを見つける方法を示します。
 
-【開発モードで使用する場合】
-ローカルでビルドしたclipsai-jpを使用する場合は、以下のいずれかの方法で
-セットアップしてください：
-
-方法1: 開発モードでインストール（推奨）
-    pip install -e .
-
-方法2: パスを追加
-    import sys
-    import os
-    sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+詳細な使用方法については、doc/SAMPLE_CODE.mdを参照してください。
 """
 
 from clipsai_jp import ClipFinder, Transcriber, MediaEditor, AudioVideoFile
@@ -25,7 +15,7 @@ import os
 # .envファイルから環境変数を読み込む（オプション）
 # python-dotenvパッケージが必要: pip install python-dotenv
 try:
-    from dotenv import load_dotenv
+    from dotenv import load_dotenv  # type: ignore
 
     # サンプルディレクトリの.envファイルを読み込む
     env_path = os.path.join(os.path.dirname(__file__), ".env")
@@ -81,18 +71,7 @@ print("\nクリップを検索しています...")
 # )
 
 # Gemini APIを使用してクリップ検出精度を向上させる場合:
-# 事前に環境変数 GEMINI_API_KEY を設定するか、gemini_api_key パラメータで指定
-# 
-# 【方法1】.envファイルを使用（推奨）
-# sample/.env ファイルを作成して以下の内容を記述:
-#   GEMINI_API_KEY=your_api_key_here
-# python-dotenvが必要: pip install python-dotenv
-#
-# 【方法2】環境変数として設定
-# export GEMINI_API_KEY="your_api_key_here"  # Linux/Mac
-# $env:GEMINI_API_KEY="your_api_key_here"     # Windows PowerShell
-#
-# APIキーの取得方法: https://aistudio.google.com/app/apikey
+# 詳細な設定方法については、doc/SAMPLE_CODE.mdの「Gemini APIを使用して精度を向上させる場合」セクションを参照してください。
 clipfinder = ClipFinder(
     min_clip_duration=10,
     max_clip_duration=60,

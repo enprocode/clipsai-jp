@@ -115,9 +115,9 @@ class ClipFinder:
                 )
                 self._use_gemini = True
                 self._gemini_priority = gemini_priority
-                logger.info("Gemini clip finder initialized")
+                logging.info("Gemini clip finder initialized")
             except Exception as e:
-                logger.warning(
+                logging.warning(
                     f"Failed to initialize Gemini: {e}. "
                     "Falling back to TextTiling only."
                 )
@@ -224,13 +224,13 @@ class ClipFinder:
                     self._gemini_priority,
                 )
 
-                logger.info(
+                logging.info(
                     f"Combined {len(clips)} clips from TextTiling and Gemini "
                     f"(Gemini suggested {len(gemini_clips)} clips)"
                 )
 
             except Exception as e:
-                logger.error(
+                logging.error(
                     f"Gemini processing failed: {e}. "
                     "Using TextTiling results only."
                 )
@@ -484,7 +484,7 @@ class ClipFinder:
                     end_time, type_of_time="end"
                 )
             except Exception as e:
-                logger.warning(
+                logging.warning(
                     f"Failed to convert time to char index for "
                     f"clip ({start_time:.2f}s - {end_time:.2f}s): {e}"
                 )

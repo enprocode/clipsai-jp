@@ -187,7 +187,60 @@ clipfinder = ClipFinder(
 1. [Google AI Studio](https://aistudio.google.com/app/apikey)にアクセス
 2. 「APIキーを作成」をクリック
 3. 生成されたAPIキーをコピー
-4. 環境変数 `GEMINI_API_KEY` に設定、または`gemini_api_key`パラメータで直接指定
+
+**Gemini APIキーの設定方法:**
+
+【方法1】.envファイルを使用（推奨）
+
+`.env`ファイルを使用することで、APIキーをコードから分離して管理できます。
+
+1. `sample/.env`ファイルを作成（またはプロジェクトルートに`.env`ファイルを作成）
+2. 以下の内容を記述:
+
+```bash
+# .env
+GEMINI_API_KEY=your_actual_api_key_here
+```
+
+3. `python-dotenv`パッケージをインストール（オプション、推奨）:
+
+```bash
+pip install python-dotenv
+```
+
+4. サンプルコードでは、`.env`ファイルから自動的に環境変数を読み込みます:
+
+```python
+# .envファイルから環境変数を読み込む（オプション）
+try:
+    from dotenv import load_dotenv
+    env_path = os.path.join(os.path.dirname(__file__), ".env")
+    load_dotenv(env_path)
+except ImportError:
+    # python-dotenvがインストールされていない場合は環境変数のみを使用
+    pass
+```
+
+**注意:** `.env`ファイルは`.gitignore`に含まれているため、リポジトリにコミットされません。セキュリティのため、実際のAPIキーをコードに直接記述しないでください。
+
+【方法2】環境変数として直接設定
+
+システムの環境変数として設定する方法です。
+
+**Linux/Mac:**
+```bash
+export GEMINI_API_KEY="your_api_key_here"
+```
+
+**Windows PowerShell:**
+```powershell
+$env:GEMINI_API_KEY="your_api_key_here"
+```
+
+**Windows コマンドプロンプト:**
+```cmd
+set GEMINI_API_KEY=your_api_key_here
+```
 
 **注意:** Gemini APIはオプショナル機能です。APIキーが設定されていない場合や、API呼び出しに失敗した場合でも、TextTilingアルゴリズムのみで動作します。
 
