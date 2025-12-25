@@ -17,9 +17,9 @@ from .exceptions import TranscriptionError
 from .transcription_element import Sentence, Word, Character
 
 # local imports
-from clipsai.filesys.json_file import JSONFile
-from clipsai.filesys.manager import FileSystemManager
-from clipsai.utils.type_checker import TypeChecker
+from clipsai_jp.filesys.json_file import JSONFile
+from clipsai_jp.filesys.manager import FileSystemManager
+from clipsai_jp.utils.type_checker import TypeChecker
 
 # 3rd party imports
 import nltk

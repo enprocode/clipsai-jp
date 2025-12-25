@@ -14,7 +14,7 @@ import subprocess
 from .temporal_media_file import TemporalMediaFile
 
 # local package imports
-from clipsai.filesys.file import File
+from clipsai_jp.filesys.file import File
 
 SUCCESS = 0
 

@@ -1,5 +1,5 @@
 # local package imports
-from clipsai.resize.rect import Rect
+from clipsai_jp.resize.rect import Rect
 
 
 def test_rect_initialization():

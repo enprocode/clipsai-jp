@@ -9,7 +9,7 @@ import traceback
 from .exceptions import InvalidInputDataError
 
 # local package imports
-from clipsai.transcribe.exceptions import NoSpeechError
+from clipsai_jp.transcribe.exceptions import NoSpeechError
 
 
 class ExceptionHandler:

@@ -295,11 +295,11 @@ def mem_stats() -> dict:
             total_gpu_memory = info.total
             free_gpu_memory = info.free
         except ImportError:
-            # pynvmlがインストールされていない場合のフォールバック
+            # pynvmlがインスト�EルされてぁE��ぁE��合�Eフォールバック
             logging.debug("pynvml not installed. Using torch.cuda for GPU memory stats.")
             if torch.cuda.is_available():
                 total_gpu_memory = torch.cuda.get_device_properties(0).total_memory
-                # torch.cuda.memory_reserved()は確保済みメモリなので、使用可能メモリを計算
+                # torch.cuda.memory_reserved()は確保済みメモリなので、使用可能メモリを計箁E
                 reserved = torch.cuda.memory_reserved(0)
                 allocated = torch.cuda.memory_allocated(0)
                 free_gpu_memory = total_gpu_memory - reserved

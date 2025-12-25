@@ -17,10 +17,10 @@ from .segment import Segment
 from .vid_proc import extract_frames
 
 # local package imports
-from clipsai.media.editor import MediaEditor
-from clipsai.media.video_file import VideoFile
-from clipsai.utils import pytorch
-from clipsai.utils.conversions import bytes_to_gibibytes
+from clipsai_jp.media.editor import MediaEditor
+from clipsai_jp.media.video_file import VideoFile
+from clipsai_jp.utils import pytorch
+from clipsai_jp.utils.conversions import bytes_to_gibibytes
 
 # 3rd party imports
 import cv2
@@ -545,18 +545,18 @@ class Resizer:
         face_detections = []
 
         for frame in frames:
-            # フレームをリサイズ（MediaPipe用）
+            # フレームをリサイズ�E�EediaPipe用�E�E
             downsample_factor = max(frame.shape[1] / face_detect_width, 1)
             detect_height = int(frame.shape[0] / downsample_factor)
             resized_frame = cv2.resize(frame, (face_detect_width, detect_height))
 
-            # RGBに変換（MediaPipeはRGBを要求）
+            # RGBに変換�E�EediaPipeはRGBを要求！E
             rgb_frame = cv2.cvtColor(resized_frame, cv2.COLOR_BGR2RGB)
 
-            # 顔検出
+            # 顔検�E
             results = self._face_detector.process(rgb_frame)
 
-            # 検出結果をMTCNN形式に変換
+            # 検�E結果をMTCNN形式に変換
             if results.detections:
                 detections = []
                 for detection in results.detections:
@@ -567,13 +567,13 @@ class Resizer:
                     x2 = int((bbox.xmin + bbox.width) * face_detect_width)
                     y2 = int((bbox.ymin + bbox.height) * detect_height)
 
-                    # マージンを適用
+                    # マ�Eジンを適用
                     x1 = max(0, x1 - self._face_detect_margin)
                     y1 = max(0, y1 - self._face_detect_margin)
                     x2 = min(face_detect_width, x2 + self._face_detect_margin)
                     y2 = min(detect_height, y2 + self._face_detect_margin)
 
-                    # 元の解像度にスケール
+                    # 允E�E解像度にスケール
                     x1 = int(x1 * downsample_factor)
                     y1 = int(y1 * downsample_factor)
                     x2 = int(x2 * downsample_factor)
@@ -581,7 +581,7 @@ class Resizer:
 
                     detections.append(np.array([x1, y1, x2, y2]))
 
-                # MTCNN形式: (N, 4)の配列
+                # MTCNN形弁E (N, 4)の配�E
                 if detections:
                     face_detections.append(np.array(detections))
                 else:

@@ -9,11 +9,11 @@ import pytest
 
 # local package imports
 from clipsai_jp import ClipFinder, Transcriber, resize
-from clipsai.clip.clipfinder import ClipFinder as ClipFinderClass
-from clipsai.transcribe.transcriber import Transcriber as TranscriberClass
-from clipsai.resize.resize import resize as resize_function
-from clipsai.diarize.pyannote import PyannoteDiarizer
-from clipsai.utils.pytorch import get_compute_device, get_valid_torch_devices
+from clipsai_jp.clip.clipfinder import ClipFinder as ClipFinderClass
+from clipsai_jp.transcribe.transcriber import Transcriber as TranscriberClass
+from clipsai_jp.resize.resize import resize as resize_function
+from clipsai_jp.diarize.pyannote import PyannoteDiarizer
+from clipsai_jp.utils.pytorch import get_compute_device, get_valid_torch_devices
 
 
 class TestWorkflowComponents:
