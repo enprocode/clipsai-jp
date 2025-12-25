@@ -1,0 +1,135 @@
+# This workflow will upload a Python Package to TestPyPI for testing
+# TestPyPI: https://test.pypi.org/
+# For more information see: https://packaging.python.org/en/latest/guides/publishing-package-distribution-releases-using-github-actions-ci-cd-workflows/
+
+name: Upload Python Package to TestPyPI
+
+on:
+  workflow_dispatch:  # 手動実行
+    inputs:
+      version:
+        description: 'Package version to publish (must match setup.py, empty = auto-detect)'
+        required: false
+        type: string
+        default: ''
+  workflow_run:  # テスト成功後に自動実行
+    workflows: ["Tests"]
+    types:
+      - completed
+    branches:
+      - main
+      - master
+
+permissions:
+  contents: read
+
+jobs:
+  testpypi-build:
+    runs-on: ubuntu-latest
+    # workflow_runトリガーの場合、テストが成功した場合のみ実行
+    if: |
+      github.event_name == 'workflow_dispatch' || 
+      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: Install build dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install build twine
+
+      - name: Get version from setup.py
+        id: get_version
+        run: |
+          SETUP_VERSION=$(python -c "import re; content = open('setup.py').read(); match = re.search(r\"version=['\\\"]([^'\\\"]+)['\\\"]\", content); print(match.group(1) if match else '')")
+          echo "version=$SETUP_VERSION" >> $GITHUB_OUTPUT
+          echo "setup.py version: $SETUP_VERSION"
+
+      - name: Verify version (manual run only)
+        if: github.event_name == 'workflow_dispatch' && github.event.inputs.version != ''
+        run: |
+          SETUP_VERSION="${{ steps.get_version.outputs.version }}"
+          INPUT_VERSION="${{ github.event.inputs.version }}"
+          echo "setup.py version: $SETUP_VERSION"
+          echo "Input version: $INPUT_VERSION"
+          if [ "$SETUP_VERSION" != "$INPUT_VERSION" ]; then
+            echo "Error: Version mismatch! setup.py has version '$SETUP_VERSION' but input is '$INPUT_VERSION'"
+            exit 1
+          fi
+
+      - name: Set package version
+        id: set_version
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ] && [ "${{ github.event.inputs.version }}" != "" ]; then
+            echo "version=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+          else
+            echo "version=${{ steps.get_version.outputs.version }}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Build release distributions
+        run: |
+          python -m build
+
+      - name: Save version for next job
+        run: |
+          echo "${{ steps.set_version.outputs.version }}" > version.txt
+
+      - name: Upload distributions
+        uses: actions/upload-artifact@v4
+        with:
+          name: testpypi-dists
+          path: dist/
+
+      - name: Upload version
+        uses: actions/upload-artifact@v4
+        with:
+          name: package-version
+          path: version.txt
+
+  testpypi-publish:
+    runs-on: ubuntu-latest
+    needs:
+      - testpypi-build
+    permissions:
+      # IMPORTANT: this permission is mandatory for trusted publishing
+      id-token: write
+
+    # Dedicated environments with protections for publishing are strongly recommended.
+    environment:
+      name: testpypi
+
+    steps:
+      - name: Retrieve release distributions
+        uses: actions/download-artifact@v4
+        with:
+          name: testpypi-dists
+          path: dist/
+
+      - name: Get package version
+        id: get_version
+        uses: actions/download-artifact@v4
+        with:
+          name: package-version
+          path: version-info
+
+      - name: Read package version
+        id: read_version
+        run: |
+          VERSION=$(cat version-info/version.txt)
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Publishing version: $VERSION"
+
+      - name: Publish release distributions to TestPyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: dist/
+          # TestPyPIへの公開を指定
+          repository-url: https://test.pypi.org/legacy/
+        env:
+          PACKAGE_VERSION: ${{ steps.read_version.outputs.version }}
+

@@ -2,9 +2,9 @@
 from unittest.mock import patch, MagicMock
 
 # local package imports
-from clipsai.media.video_file import VideoFile
-from clipsai.resize.resizer import Resizer
-from clipsai.resize.rect import Rect
+from clipsai_jp.media.video_file import VideoFile
+from clipsai_jp.resize.resizer import Resizer
+from clipsai_jp.resize.rect import Rect
 
 
 # third party imports
@@ -172,7 +172,7 @@ def test_calc_n_batches(
 
     # Mock pytorch.get_free_cpu_memory ~7.5 GiB
     with patch("torch.cuda.is_available", return_value=gpu_available), patch(
-        "utils.pytorch.get_free_cpu_memory", return_value=8000000000
+        "clipsai_jp.utils.pytorch.get_free_cpu_memory", return_value=8000000000
     ):
         n_batches = resizer._calc_n_batches(
             video_file=mock_video_file,
