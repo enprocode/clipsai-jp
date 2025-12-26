@@ -47,10 +47,6 @@ setup(
         
         # 自然言語処理
         "nltk>=3.8.0,<4.0.0",
-        # 日本語形態素解析（オプション、推奨）
-        # mecabパッケージはMeCab本体も含まれており、Windowsでもpip installのみで使用可能
-        # 公式サイト: https://pypi.org/project/mecab/
-        "mecab>=0.996.0",
         
         # ユーティリティ
         "psutil>=5.9.0,<8.0.0",
@@ -74,6 +70,13 @@ setup(
     },
     include_package_data=True,
     extras_require={
+        # 日本語形態素解析（オプション、推奨）
+        # MeCabがインストールされていない場合、自動的にNLTKにフォールバックします
+        # mecabパッケージはMeCab本体も含まれており、Windowsでもpip installのみで使用可能
+        # 公式サイト: https://pypi.org/project/mecab/
+        "mecab": [
+            "mecab>=0.996.0",
+        ],
         # GPUメモリ監視（オプション）
         "gpu": [
             "pynvml>=11.0.0,<14.0.0",
