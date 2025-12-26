@@ -23,7 +23,7 @@ try:
 except ImportError:
     # python-dotenvがインストールされていない場合は環境変数のみを使用
     pass
-video_file_path = os.path.join(os.path.dirname(__file__), "video.mp4")
+video_file_path = os.path.join(os.path.dirname(__file__), "test.mp4")
 
 # 出力ディレクトリ（必要に応じて変更してください）
 output_dir = os.path.join(os.path.dirname(__file__), "output")

@@ -185,6 +185,8 @@ class MediaEditor:
             ffmpeg_command,
             capture_output=True,
             text=True,
+            encoding='utf-8',
+            errors='ignore',
         )
 
         msg = (
@@ -580,6 +582,8 @@ class MediaEditor:
             ],
             capture_output=True,
             text=True,
+            encoding='utf-8',
+            errors='ignore',
         )
         msg = (
             "\n{0}\n"
@@ -842,6 +846,8 @@ class MediaEditor:
             ],
             capture_output=True,
             text=True,
+            encoding='utf-8',
+            errors='ignore',
         )
 
         msg = (
@@ -943,7 +949,11 @@ class MediaEditor:
                 "-vf",
                 "setpts=PTS-STARTPTS",
                 concatenated_media_file_path,
-            ]
+            ],
+            capture_output=True,
+            text=True,
+            encoding='utf-8',
+            errors='ignore',
         )
         logging.debug("Concatenation complete")
         media_paths_file.delete()
@@ -1083,6 +1093,8 @@ class MediaEditor:
             ],
             capture_output=True,
             text=True,
+            encoding='utf-8',
+            errors='ignore',
         )
 
         msg = (

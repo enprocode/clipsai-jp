@@ -236,12 +236,33 @@ class ClipFinder:
                 )
                 # Gemini失敗時はTextTilingの結果のみを使用
 
+        # 動画の長さを取得
+        video_duration = transcription.end_time
+        
         clip_objects = []
         for clip_info in clips:
+            start_time = clip_info["start_time"]
+            end_time = clip_info["end_time"]
+            
+            # クリップの時間を動画の長さに制限
+            if start_time < 0:
+                start_time = 0
+            if end_time > video_duration:
+                end_time = video_duration
+            
+            # 開始時間が終了時間より後、または動画の長さを超える場合はスキップ
+            if start_time >= end_time or start_time >= video_duration:
+                logging.warning(
+                    f"Skipping invalid clip: start_time={clip_info['start_time']:.2f}s, "
+                    f"end_time={clip_info['end_time']:.2f}s, "
+                    f"video_duration={video_duration:.2f}s"
+                )
+                continue
+            
             clip_objects.append(
                 Clip(
-                    clip_info["start_time"],
-                    clip_info["end_time"],
+                    start_time,
+                    end_time,
                     clip_info["start_char"],
                     clip_info["end_char"],
                 )
@@ -466,9 +487,27 @@ class ClipFinder:
             クリップ形式の辞書リスト
         """
         clips = []
+        video_duration = transcription.end_time
+        
         for boundary in gemini_boundaries:
             start_time = boundary.get("start_time", 0)
             end_time = boundary.get("end_time", 0)
+            
+            # 動画の長さを超えないように制限
+            if start_time < 0:
+                start_time = 0
+            if end_time > video_duration:
+                end_time = video_duration
+            
+            # 開始時間が終了時間より後、または動画の長さを超える場合はスキップ
+            if start_time >= end_time or start_time >= video_duration:
+                logging.warning(
+                    f"Skipping invalid Gemini boundary: "
+                    f"start_time={boundary.get('start_time', 0):.2f}s, "
+                    f"end_time={boundary.get('end_time', 0):.2f}s, "
+                    f"video_duration={video_duration:.2f}s"
+                )
+                continue
 
             # 時間制約をチェック
             duration = end_time - start_time

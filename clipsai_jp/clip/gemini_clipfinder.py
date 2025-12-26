@@ -195,24 +195,75 @@ JSON配列形式で返答してください:
         List[Dict]
             パースされたJSON配列。エラー時は空リスト
         """
+        if not text or not text.strip():
+            logger.warning("Empty response from Gemini API")
+            return []
+
         try:
-            # コードブロック内のJSONを抽出
-            json_match = re.search(r"```(?:json)?\s*(\[[\s\S]*?\])", text, re.DOTALL)
+            # 1. コードブロック内のJSONを抽出
+            json_match = re.search(r"```(?:json)?\s*(\[[\s\S]*?\])\s*```", text, re.DOTALL)
             if json_match:
-                json_text = json_match.group(1)
-                return json.loads(json_text)
+                json_text = json_match.group(1).strip()
+                try:
+                    return json.loads(json_text)
+                except json.JSONDecodeError:
+                    # コードブロック内のJSONが不完全な場合、次の方法を試す
+                    pass
 
-            # JSON配列を直接検索
-            json_match = re.search(r"(\[[\s\S]*?\])", text, re.DOTALL)
+            # 2. 最初の [ から最後の ] までを抽出（ネストした括弧も考慮）
+            start_idx = text.find('[')
+            if start_idx != -1:
+                bracket_count = 0
+                end_idx = start_idx
+                for i in range(start_idx, len(text)):
+                    if text[i] == '[':
+                        bracket_count += 1
+                    elif text[i] == ']':
+                        bracket_count -= 1
+                        if bracket_count == 0:
+                            end_idx = i + 1
+                            break
+                
+                if bracket_count == 0:
+                    json_text = text[start_idx:end_idx].strip()
+                    try:
+                        return json.loads(json_text)
+                    except json.JSONDecodeError as e:
+                        logger.debug(f"Failed to parse extracted JSON: {e}")
+                        logger.debug(f"Extracted text: {json_text[:200]}...")
+
+            # 3. より柔軟なパターンマッチング（複数行のJSON配列）
+            json_match = re.search(r'\[[\s\S]*\]', text)
             if json_match:
-                json_text = json_match.group(1)
-                return json.loads(json_text)
+                json_text = json_match.group(0).strip()
+                # 末尾の余分な文字を削除
+                json_text = json_text.rstrip(',.。、')
+                try:
+                    return json.loads(json_text)
+                except json.JSONDecodeError:
+                    pass
 
-            # 全体をJSONとして試行
-            return json.loads(text)
+            # 4. 全体をJSONとして試行
+            cleaned_text = text.strip()
+            # 前後の説明文を削除
+            cleaned_text = re.sub(r'^[^[]*', '', cleaned_text)
+            cleaned_text = re.sub(r'[^\]]*$', '', cleaned_text)
+            if cleaned_text.startswith('[') and cleaned_text.endswith(']'):
+                try:
+                    return json.loads(cleaned_text)
+                except json.JSONDecodeError:
+                    pass
 
-        except json.JSONDecodeError as e:
-            logger.warning(f"Failed to parse JSON from Gemini response: {e}")
+            # 5. すべての方法が失敗した場合
+            logger.warning(
+                f"Failed to parse JSON from Gemini response. "
+                f"Response preview: {text[:300]}..."
+            )
+            logger.debug(f"Full response text: {text}")
+            return []
+
+        except Exception as e:
+            logger.warning(f"Unexpected error parsing JSON response: {e}")
             logger.debug(f"Response text: {text[:500]}")
             return []
 
