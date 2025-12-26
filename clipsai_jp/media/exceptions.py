@@ -1,6 +1,7 @@
 """
 Exceptions that can be raised by the media package.
 """
+
 # local imports
 from clipsai_jp.filesys.exceptions import FileError
 

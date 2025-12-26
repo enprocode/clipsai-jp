@@ -2,6 +2,7 @@
 Defines base class for working with objects (files, directories, etc.) in the local
 file system.
 """
+
 # standard library imports
 import logging
 import os

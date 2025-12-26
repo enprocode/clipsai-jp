@@ -6,6 +6,7 @@
 
 詳細な使用方法については、doc/SAMPLE_CODE.mdを参照してください。
 """
+
 # 標準ライブラリ
 import json
 import logging
@@ -185,7 +186,9 @@ def main() -> None:
                 trimmed_media_file_path=clip_output_path,
             )
             if clip_video:
-                logger.info(f"  クリップ {clip_num} を {clip_output_path} に保存しました")
+                logger.info(
+                    f"  クリップ {clip_num} を {clip_output_path} に保存しました"
+                )
             else:
                 logger.error(f"  クリップ {clip_num} の保存に失敗しました")
         except Exception as e:
@@ -222,9 +225,7 @@ def main() -> None:
             "char_info": clip_char_info,
         }
 
-        clip_json_path = os.path.join(
-            output_dir, f"{clip_basename}_transcription.json"
-        )
+        clip_json_path = os.path.join(output_dir, f"{clip_basename}_transcription.json")
         try:
             with open(clip_json_path, "w", encoding="utf-8") as f:
                 json.dump(clip_transcription_data, f, ensure_ascii=False, indent=2)
@@ -234,9 +235,7 @@ def main() -> None:
             raise
 
         # クリップの文字起こしテキストを保存
-        clip_text_path = os.path.join(
-            output_dir, f"{clip_basename}_transcription.txt"
-        )
+        clip_text_path = os.path.join(output_dir, f"{clip_basename}_transcription.txt")
         try:
             with open(clip_text_path, "w", encoding="utf-8") as f:
                 f.write(clip_text)

@@ -16,6 +16,7 @@ ClipsAI-JPの完全な使用例
     import os
     sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 """
+
 # 標準ライブラリ
 import logging
 import os
@@ -35,7 +36,9 @@ def main() -> None:
     """ClipsAI-JPの完全な使用例のメイン処理"""
     # 設定
     video_file_path = "video.mp4"
-    pyannote_auth_token = "your_pyannote_token_here"  # リサイズ機能を使用する場合のみ必要
+    pyannote_auth_token = (
+        "your_pyannote_token_here"  # リサイズ機能を使用する場合のみ必要
+    )
 
     # ファイル存在確認
     if not os.path.exists(video_file_path):

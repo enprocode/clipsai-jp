@@ -5,6 +5,7 @@ Notes
 -----
 - AudioFiles are defined to be files that contain only audio and no other media.
 """
+
 # standard library imports
 from __future__ import annotations
 import logging

@@ -7,6 +7,7 @@ Notes
 - NLTK used for tokenizing sentences
 - Faster-Whisper GitHub: https://github.com/guillaumekln/faster-whisper
 """
+
 # standard library imports
 from __future__ import annotations
 from datetime import datetime
@@ -40,6 +41,7 @@ except Exception:
 # Japanese sentence splitter (MeCab)
 try:
     from .japanese_sentence_splitter import JapaneseSentenceSplitter
+
     JAPANESE_SPLITTER_AVAILABLE = True
 except ImportError:
     JAPANESE_SPLITTER_AVAILABLE = False
@@ -823,7 +825,7 @@ class Transcription:
         None
         """
         char_info = self.get_char_info()
-        
+
         # 日本語の場合はMeCabを使用、それ以外はNLTKを使用
         if self._language == "ja" and JAPANESE_SPLITTER_AVAILABLE:
             try:
@@ -843,8 +845,7 @@ class Transcription:
             except Exception as e:
                 # MeCabの初期化エラーなど
                 logging.warning(
-                    f"MeCab error: {e}, falling back to NLTK for "
-                    "sentence splitting"
+                    f"MeCab error: {e}, falling back to NLTK for " "sentence splitting"
                 )
                 sentences = sent_tokenize(self.text)
         else:

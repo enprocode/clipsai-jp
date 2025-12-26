@@ -5,12 +5,14 @@ MeCabを使用して日本語テキストを文に分割します。
 タイムスタンプのマッピングを維持するため、元の文字列と完全に一致する
 文分割結果を生成します。
 """
+
 import logging
 import re
 from typing import List, Optional
 
 try:
     import MeCab  # type: ignore
+
     MECAB_AVAILABLE = True
 except ImportError:
     MECAB_AVAILABLE = False
@@ -49,8 +51,7 @@ class JapaneseSentenceSplitter:
         """
         if not MECAB_AVAILABLE:
             raise ImportError(
-                "MeCab is not installed. Install it with: "
-                "pip install mecab"
+                "MeCab is not installed. Install it with: " "pip install mecab"
             )
 
         # MeCabの初期化
@@ -65,7 +66,7 @@ class JapaneseSentenceSplitter:
                 self.mecab = MeCab.Tagger(mecab_options)
             else:
                 self.mecab = MeCab.Tagger()
-            
+
             # 初期化テスト
             test_result = self.mecab.parse("テスト")
             if not test_result:
@@ -103,7 +104,7 @@ class JapaneseSentenceSplitter:
 
         # 句読点で分割候補を取得
         # 日本語の句読点: 。、！？、改行
-        sentence_endings = r'[。！？\n]'
+        sentence_endings = r"[。！？\n]"
 
         # 句読点の位置を保持しながら分割
         # 元の文字列の部分文字列をそのまま保持する（空白も含む）
@@ -179,21 +180,21 @@ class JapaneseSentenceSplitter:
                 if node.surface:
                     # 品詞情報を取得
                     # 例: "動詞,自立,*,*,五段・ラ行,連用形,終わる,オワル,オワル"
-                    features = node.feature.split(',')
+                    features = node.feature.split(",")
                     if len(features) > 0:
                         last_pos = features[0]
                         last_surface = node.surface
                 node = node.next
 
             # 文末として適切な品詞で終わっているか確認
-            valid_end_pos = ['動詞', '形容詞', '名詞', '助動詞', '記号']
+            valid_end_pos = ["動詞", "形容詞", "名詞", "助動詞", "記号"]
             if last_pos in valid_end_pos:
                 # 引用符や括弧内の場合は無効
                 if not self._is_in_quotes(sentence):
                     return True
 
             # 記号（句点）で終わっている場合も有効
-            if last_pos == '記号' and last_surface in ['。', '！', '？']:
+            if last_pos == "記号" and last_surface in ["。", "！", "？"]:
                 if not self._is_in_quotes(sentence):
                     return True
 
@@ -220,7 +221,7 @@ class JapaneseSentenceSplitter:
             引用符や括弧内にある場合True
         """
         # 引用符の数をカウント
-        quote_chars = ['"', '"', '"', '"', '「', '」', '『', '』', '（', '）', '(', ')']
+        quote_chars = ['"', '"', '"', '"', "「", "」", "『", "』", "（", "）", "(", ")"]
         quote_count = 0
 
         for char in sentence:
@@ -229,4 +230,3 @@ class JapaneseSentenceSplitter:
 
         # 奇数個の引用符がある場合は、引用符内にある
         return quote_count % 2 != 0
-

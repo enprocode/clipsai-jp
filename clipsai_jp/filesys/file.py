@@ -6,6 +6,7 @@ Notes
 - Information on mimetypes:
 https://developer.mozilla.org/en-US/docs/Web/HTTP/Basics_of_HTTP/MIME_types
 """
+
 # standard library imports
 from __future__ import annotations
 import logging

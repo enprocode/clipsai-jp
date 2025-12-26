@@ -19,6 +19,7 @@
     import os
     sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 """
+
 # 標準ライブラリ
 import logging
 import os
@@ -62,7 +63,7 @@ def main() -> None:
         crops = resize(
             video_file_path=video_file_path,
             pyannote_auth_token=pyannote_auth_token,
-            aspect_ratio=(9, 16)  # (幅, 高さ) の形式
+            aspect_ratio=(9, 16),  # (幅, 高さ) の形式
         )
     except Exception as e:
         logger.error(f"リサイズ処理中にエラーが発生しました: {e}")
@@ -74,9 +75,9 @@ def main() -> None:
         logger.info(f"\nセグメント {i + 1}:")
         logger.info(f"  開始時間: {segment['start_time']}秒")
         logger.info(f"  終了時間: {segment['end_time']}秒")
-        if 'x' in segment and 'y' in segment:
+        if "x" in segment and "y" in segment:
             logger.info(f"  位置: ({segment['x']}, {segment['y']})")
-        if 'width' in segment and 'height' in segment:
+        if "width" in segment and "height" in segment:
             logger.info(f"  サイズ: {segment['width']}x{segment['height']}")
 
     # リサイズ動画を実際のファイルとして保存（オプション）

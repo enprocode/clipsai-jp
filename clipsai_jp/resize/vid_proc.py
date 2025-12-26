@@ -1,6 +1,7 @@
 """
 Utilities for video processing.
 """
+
 # standard library imports
 from concurrent.futures import ThreadPoolExecutor
 import logging

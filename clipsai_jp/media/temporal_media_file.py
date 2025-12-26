@@ -5,6 +5,7 @@ Notes
 -----
 - TemporalMediaFiles are defined to be files that contain audio or video or both.
 """
+
 # standard library imports
 import logging
 

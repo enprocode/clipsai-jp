@@ -8,6 +8,7 @@ Notes
 - TextTiling using BERT embeddings was first done June 2021:
     https://arxiv.org/abs/2106.12978
 """
+
 # standard library imports
 from collections.abc import Awaitable, Callable
 import logging

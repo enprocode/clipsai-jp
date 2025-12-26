@@ -14,6 +14,7 @@ In other words, it takes approximately 1.5 minutes to process a one hour convers
 viable to analyze different subsections of the video, detect the number of faces, and
 use that as the number of speakers to detect.
 """
+
 # standard library imports
 import logging
 import os

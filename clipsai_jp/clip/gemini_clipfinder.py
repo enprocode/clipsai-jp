@@ -3,6 +3,7 @@ Gemini APIを使用したクリップ検出の補助機能
 公式SDK: google-genai を使用
 参考: https://ai.google.dev/gemini-api/docs/quickstart?hl=ja#python
 """
+
 # standard library imports
 import json
 import logging
@@ -57,7 +58,7 @@ class GeminiClipFinder:
             final_api_key = api_key
         else:
             final_api_key = os.environ.get("GEMINI_API_KEY")
-        
+
         if not final_api_key:
             # APIキーが設定されていない場合
             raise ValueError(
@@ -81,9 +82,7 @@ class GeminiClipFinder:
                     f"Error details: {e}"
                 )
             else:
-                raise ValueError(
-                    f"Failed to initialize Gemini client. Error: {e}"
-                )
+                raise ValueError(f"Failed to initialize Gemini client. Error: {e}")
 
     def suggest_clip_boundaries(
         self,
@@ -201,7 +200,9 @@ JSON配列形式で返答してください:
 
         try:
             # 1. コードブロック内のJSONを抽出
-            json_match = re.search(r"```(?:json)?\s*(\[[\s\S]*?\])\s*```", text, re.DOTALL)
+            json_match = re.search(
+                r"```(?:json)?\s*(\[[\s\S]*?\])\s*```", text, re.DOTALL
+            )
             if json_match:
                 json_text = json_match.group(1).strip()
                 try:
@@ -211,19 +212,19 @@ JSON配列形式で返答してください:
                     pass
 
             # 2. 最初の [ から最後の ] までを抽出（ネストした括弧も考慮）
-            start_idx = text.find('[')
+            start_idx = text.find("[")
             if start_idx != -1:
                 bracket_count = 0
                 end_idx = start_idx
                 for i in range(start_idx, len(text)):
-                    if text[i] == '[':
+                    if text[i] == "[":
                         bracket_count += 1
-                    elif text[i] == ']':
+                    elif text[i] == "]":
                         bracket_count -= 1
                         if bracket_count == 0:
                             end_idx = i + 1
                             break
-                
+
                 if bracket_count == 0:
                     json_text = text[start_idx:end_idx].strip()
                     try:
@@ -233,11 +234,11 @@ JSON配列形式で返答してください:
                         logger.debug(f"Extracted text: {json_text[:200]}...")
 
             # 3. より柔軟なパターンマッチング（複数行のJSON配列）
-            json_match = re.search(r'\[[\s\S]*\]', text)
+            json_match = re.search(r"\[[\s\S]*\]", text)
             if json_match:
                 json_text = json_match.group(0).strip()
                 # 末尾の余分な文字を削除
-                json_text = json_text.rstrip(',.。、')
+                json_text = json_text.rstrip(",.。、")
                 try:
                     return json.loads(json_text)
                 except json.JSONDecodeError:
@@ -246,9 +247,9 @@ JSON配列形式で返答してください:
             # 4. 全体をJSONとして試行
             cleaned_text = text.strip()
             # 前後の説明文を削除
-            cleaned_text = re.sub(r'^[^[]*', '', cleaned_text)
-            cleaned_text = re.sub(r'[^\]]*$', '', cleaned_text)
-            if cleaned_text.startswith('[') and cleaned_text.endswith(']'):
+            cleaned_text = re.sub(r"^[^[]*", "", cleaned_text)
+            cleaned_text = re.sub(r"[^\]]*$", "", cleaned_text)
+            if cleaned_text.startswith("[") and cleaned_text.endswith("]"):
                 try:
                     return json.loads(cleaned_text)
                 except json.JSONDecodeError:
@@ -266,4 +267,3 @@ JSON配列形式で返答してください:
             logger.warning(f"Unexpected error parsing JSON response: {e}")
             logger.debug(f"Response text: {text[:500]}")
             return []
-

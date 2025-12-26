@@ -474,7 +474,8 @@ pip install -e .
 ```bash
 # faster-whisper は numpy>=1.24.0 を要求（より柔軟なバージョン制約）
 # torch は pyannote.audio の要件に合わせて設定（pyannote.audio 3.3.0+ は torch>=2.0.0 を要求）
-pip install "numpy>=1.24.0,<2.1.0" "torch>=2.0.0,<3.0.0"
+# torchaudio 2.9.0以降ではAudioMetaDataが削除されているため、torchも2.9.0未満に制限
+pip install "numpy>=1.24.0,<2.1.0" "torch>=2.0.0,<2.9.0" "torchaudio>=2.0.0,<2.9.0"
 
 # その後、clipsai-jpを再インストール
 pip install -e .
@@ -487,7 +488,8 @@ pip install -e .
 pip uninstall numpy torch torchaudio torchvision facenet-pytorch -y
 
 # faster-whisper と pyannote.audio の要件を満たすバージョンをインストール
-pip install "numpy>=1.24.0,<2.1.0" "torch>=2.0.0,<3.0.0"
+# torchaudio 2.9.0以降ではAudioMetaDataが削除されているため、torchも2.9.0未満に制限
+pip install "numpy>=1.24.0,<2.1.0" "torch>=2.0.0,<2.9.0" "torchaudio>=2.0.0,<2.9.0"
 
 # clipsai-jpを再インストール
 pip install -e .

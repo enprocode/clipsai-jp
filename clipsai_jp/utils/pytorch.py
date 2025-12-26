@@ -1,6 +1,7 @@
 """
 Utility functions for PyTorch.
 """
+
 # standard package imports
 import logging
 import random
@@ -289,6 +290,7 @@ def mem_stats() -> dict:
         torch.cuda.empty_cache()
         try:
             import pynvml
+
             pynvml.nvmlInit()
             h = pynvml.nvmlDeviceGetHandleByIndex(0)
             info = pynvml.nvmlDeviceGetMemoryInfo(h)
@@ -296,7 +298,9 @@ def mem_stats() -> dict:
             free_gpu_memory = info.free
         except Exception:
             # pynvmlがインスト�EルされてぁE��ぁE��合�Eフォールバック
-            logging.debug("pynvml not installed. Using torch.cuda for GPU memory stats.")
+            logging.debug(
+                "pynvml not installed. Using torch.cuda for GPU memory stats."
+            )
             if torch.cuda.is_available():
                 total_gpu_memory = torch.cuda.get_device_properties(0).total_memory
                 # torch.cuda.memory_allocated()は実際に使用されているメモリを返す

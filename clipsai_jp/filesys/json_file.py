@@ -1,6 +1,7 @@
 """
 Working with json files in the local file system.
 """
+
 # standard library imports
 from __future__ import annotations
 import json

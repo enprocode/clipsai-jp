@@ -1,6 +1,7 @@
 """
 A class to represent the Crops object.
 """
+
 # current package imports
 from .segment import Segment
 

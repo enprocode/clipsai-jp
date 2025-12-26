@@ -5,6 +5,7 @@ Notes
 -----
 - ROI is "region of interest"
 """
+
 # standard library imports
 import logging
 
@@ -70,7 +71,7 @@ class Resizer:
         # MediaPipe Face Detectionを使用
         self._face_detector = mp.solutions.face_detection.FaceDetection(
             model_selection=1,  # 0=short-range, 1=full-range
-            min_detection_confidence=0.5
+            min_detection_confidence=0.5,
         )
         self._face_detect_margin = face_detect_margin
         # media pipe automatically uses gpu if available
@@ -1056,14 +1057,14 @@ class Resizer:
         """
         Remove the face detector and face mesher from memory and explicity free up GPU memory.
         """
-        if hasattr(self, '_face_detector') and self._face_detector is not None:
+        if hasattr(self, "_face_detector") and self._face_detector is not None:
             try:
                 self._face_detector.close()
             except AttributeError:
                 # MediaPipe Face Detection may not have close() method in some versions
                 pass
             self._face_detector = None
-        if hasattr(self, '_face_mesher') and self._face_mesher is not None:
+        if hasattr(self, "_face_mesher") and self._face_mesher is not None:
             try:
                 self._face_mesher.close()
             except AttributeError:

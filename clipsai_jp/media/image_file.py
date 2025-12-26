@@ -1,6 +1,7 @@
 """
 Working with image files.
 """
+
 # current package imports
 from .media_file import MediaFile
 

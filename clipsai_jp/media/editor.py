@@ -1,6 +1,7 @@
 """
 Editing media files with ffmpeg.
 """
+
 # standard library imports
 import logging
 import subprocess
@@ -209,8 +210,8 @@ class MediaEditor:
             ffmpeg_command,
             capture_output=True,
             text=True,
-            encoding='utf-8',
-            errors='ignore',
+            encoding="utf-8",
+            errors="ignore",
         )
 
         msg = (
@@ -615,8 +616,8 @@ class MediaEditor:
             ],
             capture_output=True,
             text=True,
-            encoding='utf-8',
-            errors='ignore',
+            encoding="utf-8",
+            errors="ignore",
         )
         msg = (
             "\n{0}\n"
@@ -882,8 +883,8 @@ class MediaEditor:
             ],
             capture_output=True,
             text=True,
-            encoding='utf-8',
-            errors='ignore',
+            encoding="utf-8",
+            errors="ignore",
         )
 
         msg = (
@@ -988,8 +989,8 @@ class MediaEditor:
             ],
             capture_output=True,
             text=True,
-            encoding='utf-8',
-            errors='ignore',
+            encoding="utf-8",
+            errors="ignore",
         )
         logging.debug("Concatenation complete")
         media_paths_file.delete()
@@ -1129,8 +1130,8 @@ class MediaEditor:
             ],
             capture_output=True,
             text=True,
-            encoding='utf-8',
-            errors='ignore',
+            encoding="utf-8",
+            errors="ignore",
         )
 
         msg = (

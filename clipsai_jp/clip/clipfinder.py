@@ -1,6 +1,7 @@
 """
 Finding clips with AudioFiles using the TextTiling algorithm.
 """
+
 # standard library imports
 import logging
 from typing import List
@@ -231,25 +232,24 @@ class ClipFinder:
 
             except Exception as e:
                 logging.error(
-                    f"Gemini processing failed: {e}. "
-                    "Using TextTiling results only."
+                    f"Gemini processing failed: {e}. " "Using TextTiling results only."
                 )
                 # Gemini失敗時はTextTilingの結果のみを使用
 
         # 動画の長さを取得
         video_duration = transcription.end_time
-        
+
         clip_objects = []
         for clip_info in clips:
             start_time = clip_info["start_time"]
             end_time = clip_info["end_time"]
-            
+
             # クリップの時間を動画の長さに制限
             if start_time < 0:
                 start_time = 0
             if end_time > video_duration:
                 end_time = video_duration
-            
+
             # 開始時間が終了時間より後、または動画の長さを超える場合はスキップ
             if start_time >= end_time or start_time >= video_duration:
                 logging.warning(
@@ -258,7 +258,7 @@ class ClipFinder:
                     f"video_duration={video_duration:.2f}s"
                 )
                 continue
-            
+
             clip_objects.append(
                 Clip(
                     start_time,
@@ -488,17 +488,17 @@ class ClipFinder:
         """
         clips = []
         video_duration = transcription.end_time
-        
+
         for boundary in gemini_boundaries:
             start_time = boundary.get("start_time", 0)
             end_time = boundary.get("end_time", 0)
-            
+
             # 動画の長さを超えないように制限
             if start_time < 0:
                 start_time = 0
             if end_time > video_duration:
                 end_time = video_duration
-            
+
             # 開始時間が終了時間より後、または動画の長さを超える場合はスキップ
             if start_time >= end_time or start_time >= video_duration:
                 logging.warning(
@@ -614,8 +614,7 @@ class ClipFinder:
 
         # 重みを削除して返す
         return [
-            {k: v for k, v in clip.items() if k != "weight"}
-            for clip in merged_clips
+            {k: v for k, v in clip.items() if k != "weight"} for clip in merged_clips
         ]
 
     def _calculate_overlap(

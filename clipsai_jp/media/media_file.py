@@ -1,6 +1,7 @@
 """
 Working with media files (i.e. image, audio, video).
 """
+
 # standard library imports
 import json
 import logging
