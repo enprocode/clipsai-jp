@@ -8,8 +8,7 @@
 """
 
 from clipsai_jp import ClipFinder, Transcriber, MediaEditor, AudioVideoFile
-
-# 動画ファイルのパス（絶対パスを指定してください）
+import json
 import os
 
 # .envファイルから環境変数を読み込む（オプション）
@@ -29,21 +28,24 @@ video_file_path = os.path.join(os.path.dirname(__file__), "test.mp4")
 output_dir = os.path.join(os.path.dirname(__file__), "output")
 os.makedirs(output_dir, exist_ok=True)
 
+# 元の動画ファイル名からベース名を取得（拡張子を除く）
+video_basename = os.path.splitext(os.path.basename(video_file_path))[0]
+
 # 1. トランスクリプターを作成して動画を文字起こし
 print("動画を文字起こししています...")
 transcriber = Transcriber()
 transcription = transcriber.transcribe(audio_file_path=video_file_path)
 
-# 文字起こし結果を保存
+# 文字起こし結果を保存（元のファイル名を使用）
 print("文字起こし結果を保存しています...")
 # JSON形式で保存（タイムスタンプ情報を含む）
 json_file = transcription.store_as_json_file(
-    os.path.join(output_dir, "transcription.json")
+    os.path.join(output_dir, f"{video_basename}_transcription.json")
 )
 print(f"  JSON形式: {json_file.path}")
 
 # テキスト形式で保存
-text_file_path = os.path.join(output_dir, "transcription.txt")
+text_file_path = os.path.join(output_dir, f"{video_basename}_transcription.txt")
 with open(text_file_path, "w", encoding="utf-8") as f:
     f.write(transcription.text)
 print(f"  テキスト形式: {text_file_path}")
@@ -93,13 +95,37 @@ for i, clip in enumerate(clips):
     print(f"  終了時間: {clip.end_time:.2f}秒")
     print(f"  期間: {clip.end_time - clip.start_time:.2f}秒")
 
-# 4. クリップを動画ファイルとして保存（オプション）
+# 4. クリップを動画ファイルとして保存
 print("\nクリップを動画ファイルとして保存しています...")
 media_editor = MediaEditor()
 media_file = AudioVideoFile(video_file_path)
 
+
+def format_time_srt(seconds: float) -> str:
+    """SRT形式の時間フォーマット（HH:MM:SS,mmm）"""
+    hours = int(seconds // 3600)
+    minutes = int((seconds % 3600) // 60)
+    secs = int(seconds % 60)
+    millis = int((seconds % 1) * 1000)
+    return f"{hours:02d}:{minutes:02d}:{secs:02d},{millis:03d}"
+
+
+def format_time_vtt(seconds: float) -> str:
+    """VTT形式の時間フォーマット（HH:MM:SS.mmm）"""
+    hours = int(seconds // 3600)
+    minutes = int((seconds % 3600) // 60)
+    secs = int(seconds % 60)
+    millis = int((seconds % 1) * 1000)
+    return f"{hours:02d}:{minutes:02d}:{secs:02d}.{millis:03d}"
+
+
 for i, clip in enumerate(clips):
-    clip_output_path = os.path.join(output_dir, f"clip_{i+1:03d}.mp4")
+    clip_num = i + 1
+    # ファイル名のベース（例: "test_clip_001"）
+    clip_basename = f"{video_basename}_clip_{clip_num:03d}"
+
+    # クリップ動画を保存
+    clip_output_path = os.path.join(output_dir, f"{clip_basename}.mp4")
     clip_video = media_editor.trim(
         media_file=media_file,
         start_time=clip.start_time,
@@ -107,8 +133,72 @@ for i, clip in enumerate(clips):
         trimmed_media_file_path=clip_output_path,
     )
     if clip_video:
-        print(f"  クリップ {i+1} を {clip_output_path} に保存しました")
+        print(f"  クリップ {clip_num} を {clip_output_path} に保存しました")
     else:
-        print(f"  クリップ {i+1} の保存に失敗しました")
+        print(f"  クリップ {clip_num} の保存に失敗しました")
+
+    # クリップの文字起こしデータを取得
+    clip_sentences = transcription.get_sentence_info(
+        start_time=clip.start_time,
+        end_time=clip.end_time,
+    )
+
+    clip_char_info = transcription.get_char_info(
+        start_time=clip.start_time,
+        end_time=clip.end_time,
+    )
+    clip_text = "".join([char["char"] for char in clip_char_info])
+
+    # クリップの文字起こしデータをJSON形式で保存
+    clip_transcription_data = {
+        "clip_number": clip_num,
+        "start_time": clip.start_time,
+        "end_time": clip.end_time,
+        "duration": clip.end_time - clip.start_time,
+        "text": clip_text,
+        "sentences": [
+            {
+                "sentence": s["sentence"],
+                "start_time": s["start_time"],
+                "end_time": s["end_time"],
+            }
+            for s in clip_sentences
+        ],
+        "char_info": clip_char_info,
+    }
+
+    clip_json_path = os.path.join(output_dir, f"{clip_basename}_transcription.json")
+    with open(clip_json_path, "w", encoding="utf-8") as f:
+        json.dump(clip_transcription_data, f, ensure_ascii=False, indent=2)
+    print(f"  クリップ {clip_num} の文字起こしJSON: {clip_json_path}")
+
+    # クリップの文字起こしテキストを保存
+    clip_text_path = os.path.join(output_dir, f"{clip_basename}_transcription.txt")
+    with open(clip_text_path, "w", encoding="utf-8") as f:
+        f.write(clip_text)
+    print(f"  クリップ {clip_num} の文字起こしテキスト: {clip_text_path}")
+
+    # SRT形式の字幕ファイルを生成
+    srt_path = os.path.join(output_dir, f"{clip_basename}.srt")
+    with open(srt_path, "w", encoding="utf-8") as f:
+        for j, sentence in enumerate(clip_sentences, 1):
+            # クリップ開始時刻を0秒にオフセット
+            start_time_srt = format_time_srt(sentence["start_time"] - clip.start_time)
+            end_time_srt = format_time_srt(sentence["end_time"] - clip.start_time)
+            f.write(f"{j}\n")
+            f.write(f"{start_time_srt} --> {end_time_srt}\n")
+            f.write(f"{sentence['sentence']}\n\n")
+    print(f"  クリップ {clip_num} の字幕（SRT）: {srt_path}")
+
+    # VTT形式の字幕ファイルを生成
+    vtt_path = os.path.join(output_dir, f"{clip_basename}.vtt")
+    with open(vtt_path, "w", encoding="utf-8") as f:
+        f.write("WEBVTT\n\n")
+        for sentence in clip_sentences:
+            start_time_vtt = format_time_vtt(sentence["start_time"] - clip.start_time)
+            end_time_vtt = format_time_vtt(sentence["end_time"] - clip.start_time)
+            f.write(f"{start_time_vtt} --> {end_time_vtt}\n")
+            f.write(f"{sentence['sentence']}\n\n")
+    print(f"  クリップ {clip_num} の字幕（VTT）: {vtt_path}")
 
 print(f"\nすべての出力ファイルは {output_dir} に保存されました。")
