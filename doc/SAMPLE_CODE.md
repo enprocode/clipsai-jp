@@ -252,10 +252,16 @@ ClipsAI-JPは、日本語の文字起こしに対して自動的にMeCabを使�
 
 - MeCabがインストールされている場合: 自動的にMeCabを使用して日本語の文構造を考慮した文分割を実行
 - MeCabがインストールされていない場合: 自動的にNLTKにフォールバック（既存の動作を維持）
+- 元の文字列の空白・改行を保持: MeCabによる文分割では、元の文字列の空白や改行を保持するため、タイムスタンプのマッピングが正確に機能します（改行が句点代わりに使われる字幕でも対応可能）
 - MeCabのインストール方法:
-  - Windows: [MeCab公式サイト](https://taku910.github.io/mecab/)からインストーラーをダウンロード
-  - Mac: `brew install mecab mecab-ipadic`
-  - Linux: `sudo apt-get install mecab libmecab-dev mecab-ipadic-utf8`
+  - **全プラットフォーム（推奨）:** `pip install mecab`
+    - [PyPIのmecabパッケージ](https://pypi.org/project/mecab/)を使用します
+    - MeCab本体も含まれており、システムレベルのインストールは不要です
+    - Windows、Mac、Linuxすべてで`pip install`のみで使用可能
+  - **Mac/Linux（代替方法）:** システムパッケージマネージャーを使用する場合
+    - Mac: `brew install mecab mecab-ipadic`
+    - Linux: `sudo apt-get install mecab libmecab-dev mecab-ipadic-utf8`
+    - その後、`pip install mecab-python3`でPythonバインディングをインストール
 
 **トラブルシューティング:**
 - クリップが1つも見つからない場合: `cutoff_policy="low"`に変更してみてください
@@ -265,7 +271,6 @@ ClipsAI-JPは、日本語の文字起こしに対して自動的にMeCabを使�
 - より高精度な検出が必要な場合: `embedding_model="high_accuracy"`または`"large"`を指定してください（処理時間が長くなります）
 - クリップ検出精度を最大限に向上させたい場合: `use_gemini=True`を指定してGemini APIを使用してください
 - 日本語の文分割が不自然な場合: MeCabをインストールすることで、より自然な文分割が可能になります（自動的に使用されます）
-- 日本語の文分割が不自然な場合: MeCabをインストールすることで、より自然な文分割が可能になります
 
 ### 2. `sample/resize_video.py`
 動画を指定したアスペクト比にリサイズするサンプルです。

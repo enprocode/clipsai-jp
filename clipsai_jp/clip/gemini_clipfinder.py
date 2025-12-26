@@ -51,19 +51,39 @@ class GeminiClipFinder:
                 "Install it with: pip install google-genai"
             )
 
+        # APIキーの取得
+        # 引数で指定された場合はそれを使用、そうでなければ環境変数から取得
         if api_key:
-            # APIキーが指定された場合は環境変数として設定
-            os.environ["GEMINI_API_KEY"] = api_key
+            final_api_key = api_key
+        else:
+            final_api_key = os.environ.get("GEMINI_API_KEY")
+        
+        if not final_api_key:
+            # APIキーが設定されていない場合
+            raise ValueError(
+                "GEMINI_API_KEY is not set. "
+                "Please set it as an environment variable or pass it as api_key parameter. "
+                "Get your API key from: https://aistudio.google.com/app/apikey"
+            )
 
-        # クライアントは環境変数 GEMINI_API_KEY から自動的に取得
+        # クライアントの初期化（APIキーを明示的に渡す）
         try:
-            self.client = genai.Client()
+            self.client = genai.Client(api_key=final_api_key)
             self.model_name = model
         except Exception as e:
-            raise ValueError(
-                f"Failed to initialize Gemini client. "
-                f"Make sure GEMINI_API_KEY environment variable is set. Error: {e}"
-            )
+            # エラーメッセージから、APIキーの問題かどうかを判断
+            error_str = str(e)
+            if "Missing key inputs" in error_str or "api_key" in error_str.lower():
+                raise ValueError(
+                    f"Failed to initialize Gemini client: API key is missing or invalid. "
+                    f"Please set GEMINI_API_KEY environment variable or pass api_key parameter. "
+                    f"Get your API key from: https://aistudio.google.com/app/apikey. "
+                    f"Error details: {e}"
+                )
+            else:
+                raise ValueError(
+                    f"Failed to initialize Gemini client. Error: {e}"
+                )
 
     def suggest_clip_boundaries(
         self,

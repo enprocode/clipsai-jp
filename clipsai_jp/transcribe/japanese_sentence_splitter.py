@@ -50,7 +50,7 @@ class JapaneseSentenceSplitter:
         if not MECAB_AVAILABLE:
             raise ImportError(
                 "MeCab is not installed. Install it with: "
-                "pip install mecab-python3"
+                "pip install mecab"
             )
 
         # MeCabの初期化
@@ -59,7 +59,13 @@ class JapaneseSentenceSplitter:
             mecab_options = f"-d {mecab_dict_path}"
 
         try:
-            self.mecab = MeCab.Tagger(mecab_options)
+            # mecabパッケージの場合、オプションなしで初期化を試みる
+            # （設定ファイルは自動検出される）
+            if mecab_options:
+                self.mecab = MeCab.Tagger(mecab_options)
+            else:
+                self.mecab = MeCab.Tagger()
+            
             # 初期化テスト
             test_result = self.mecab.parse("テスト")
             if not test_result:

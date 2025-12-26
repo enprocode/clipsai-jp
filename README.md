@@ -19,11 +19,14 @@ Clips AIは、長い動画を自動的にクリップに変換するオープン
 - Python >= 3.9
 - [libmagic](https://github.com/ahupp/python-magic?tab=readme-ov-file#debianubuntu)（Windows: `pip install python-magic-bin`、Mac: `brew install libmagic`）
 - [ffmpeg](https://github.com/kkroening/ffmpeg-python/tree/master?tab=readme-ov-file#installing-ffmpeg)（Windows: [ffmpeg.org](https://ffmpeg.org/download.html)からダウンロード、Mac: `brew install ffmpeg`）
-- [MeCab](https://taku910.github.io/mecab/)（日本語の文分割精度向上のため推奨）
-  - Windows: [MeCab公式サイト](https://taku910.github.io/mecab/)からインストーラーをダウンロード
-  - Mac: `brew install mecab mecab-ipadic`
-  - Linux: `sudo apt-get install mecab libmecab-dev mecab-ipadic-utf8`
-  - 注意: MeCabがインストールされていない場合、自動的にNLTKにフォールバックします
+- [MeCab](https://pypi.org/project/mecab/)（日本語の文分割精度向上のため推奨）
+  - **全プラットフォーム（推奨）:** `pip install mecab`
+    - MeCab本体も含まれており、システムレベルのインストールは不要です
+    - Windows、Mac、Linuxすべてで`pip install`のみで使用可能
+  - **Mac/Linux（代替方法）:** システムパッケージマネージャーを使用する場合
+    - Mac: `brew install mecab mecab-ipadic`
+    - Linux: `sudo apt-get install mecab libmecab-dev mecab-ipadic-utf8`
+  - **注意:** MeCabがインストールされていない場合、自動的にNLTKにフォールバックします
 
 **推奨:** 依存関係の競合を避けるため、仮想環境（[venv](https://packaging.python.org/en/latest/guides/installing-using-pip-and-virtual-environments/#create-and-use-virtual-environments)など）の使用を強く推奨します。
 

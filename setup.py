@@ -48,11 +48,9 @@ setup(
         # 自然言語処理
         "nltk>=3.8.0,<4.0.0",
         # 日本語形態素解析（オプション、推奨）
-        # 注意: システムレベルでMeCab本体と辞書のインストールが必要
-        # Windows: https://taku910.github.io/mecab/ からインストーラーをダウンロード
-        # Mac: brew install mecab mecab-ipadic
-        # Linux: sudo apt-get install mecab libmecab-dev mecab-ipadic-utf8
-        "mecab-python3>=1.0.0,<2.0.0",
+        # mecabパッケージはMeCab本体も含まれており、Windowsでもpip installのみで使用可能
+        # 公式サイト: https://pypi.org/project/mecab/
+        "mecab>=0.996.0",
         
         # ユーティリティ
         "psutil>=5.9.0,<8.0.0",
