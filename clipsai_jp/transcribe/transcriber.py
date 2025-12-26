@@ -6,6 +6,7 @@ Notes
 - Faster-Whisper GitHub: https://github.com/guillaumekln/faster-whisper
 - Faster-Whisper is a faster implementation of OpenAI's Whisper model using CTranslate2
 """
+
 # standard library imports
 from datetime import datetime
 import logging
@@ -120,13 +121,15 @@ class Transcriber:
         )
 
         # Convert faster-whisper segments to our format
-        detected_language = info.language if hasattr(info, "language") else iso6391_lang_code or "en"
-        
+        detected_language = (
+            info.language if hasattr(info, "language") else iso6391_lang_code or "en"
+        )
+
         # Collect all segments (segments is a generator)
         all_segments = []
         for segment in segments:
             all_segments.append(segment)
-        
+
         if len(all_segments) == 0:
             err = "Media file '{}' contains no active speech.".format(media_file.path)
             logging.error(err)
@@ -134,82 +137,96 @@ class Transcriber:
 
         # Build character-level timestamps from word-level timestamps
         char_info = []
-        
+
         for seg_idx, segment in enumerate(all_segments):
             segment_text = segment.text.strip()
             if not segment_text:
                 continue
-                
+
             # Get words from segment (words is a list when word_timestamps=True)
-            words = list(segment.words) if hasattr(segment, "words") and segment.words else []
-            
+            words = (
+                list(segment.words)
+                if hasattr(segment, "words") and segment.words
+                else []
+            )
+
             # If we have word timestamps, use them to create character timestamps
             if words:
                 for word in words:
                     word_text = word.word
                     word_start = word.start
                     word_end = word.end
-                    
+
                     # Calculate duration per character in this word
                     word_duration = word_end - word_start
                     num_chars = len(word_text)
-                    
+
                     if num_chars > 0:
                         char_duration = word_duration / num_chars
                         for i, char in enumerate(word_text):
                             char_start = word_start + (i * char_duration)
                             char_end = word_start + ((i + 1) * char_duration)
-                            
-                            char_info.append({
-                                "char": char,
-                                "start_time": char_start,
-                                "end_time": char_end,
-                                "speaker": None,
-                            })
+
+                            char_info.append(
+                                {
+                                    "char": char,
+                                    "start_time": char_start,
+                                    "end_time": char_end,
+                                    "speaker": None,
+                                }
+                            )
                     else:
                         # Handle empty word (shouldn't happen, but just in case)
-                        char_info.append({
-                            "char": " ",
-                            "start_time": word_start,
-                            "end_time": word_end,
-                            "speaker": None,
-                        })
+                        char_info.append(
+                            {
+                                "char": " ",
+                                "start_time": word_start,
+                                "end_time": word_end,
+                                "speaker": None,
+                            }
+                        )
             else:
                 # Fallback: distribute segment time evenly across characters
                 segment_start = segment.start
                 segment_end = segment.end
                 segment_duration = segment_end - segment_start
                 num_chars = len(segment_text)
-                
+
                 if num_chars > 0:
                     char_duration = segment_duration / num_chars
                     for i, char in enumerate(segment_text):
                         char_start = segment_start + (i * char_duration)
                         char_end = segment_start + ((i + 1) * char_duration)
-                        
-                        char_info.append({
-                            "char": char,
-                            "start_time": char_start,
-                            "end_time": char_end,
-                            "speaker": None,
-                        })
+
+                        char_info.append(
+                            {
+                                "char": char,
+                                "start_time": char_start,
+                                "end_time": char_end,
+                                "speaker": None,
+                            }
+                        )
                 else:
                     # Empty segment
-                    char_info.append({
-                        "char": " ",
-                        "start_time": segment_start,
-                        "end_time": segment_end,
-                        "speaker": None,
-                    })
-            
+                    char_info.append(
+                        {
+                            "char": " ",
+                            "start_time": segment_start,
+                            "end_time": segment_end,
+                            "speaker": None,
+                        }
+                    )
+
             # Add space after segment if not the last segment
             if seg_idx < len(all_segments) - 1:
-                char_info.append({
-                    "char": " ",
-                    "start_time": segment.end,
-                    "end_time": segment.end + 0.1,  # Small gap
-                    "speaker": None,
-                })
+                char_info.append(
+                    {
+                        "char": " ",
+                        "start_time": segment.end,
+                        "end_time": segment.end + 0.1,  # Small gap
+                        "speaker": None,
+                    }
+                )
 
         transcription_dict = {
             "source_software": "faster-whisper",

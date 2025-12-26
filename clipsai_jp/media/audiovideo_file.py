@@ -6,6 +6,7 @@ Notes
 - AudioVideoFiles are defined to be files that contain both audio and video (cannot lack
 either form).
 """
+
 # standard library imports
 import logging
 

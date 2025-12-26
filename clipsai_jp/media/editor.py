@@ -1,6 +1,7 @@
 """
 Editing media files with ffmpeg.
 """
+
 # standard library imports
 import logging
 import subprocess
@@ -54,8 +55,8 @@ class MediaEditor:
         end_time: float,
         trimmed_media_file_path: str,
         overwrite: bool = True,
-        video_codec: str = "copy",
-        audio_codec: str = "copy",
+        video_codec: str = "libx264",
+        audio_codec: str = "aac",
         crf: str = "23",
         preset: str = "medium",
         num_threads: str = "0",
@@ -82,9 +83,12 @@ class MediaEditor:
         overwrite: bool
             Overwrites 'trimmed_media_file_path' if True; does not overwrite if False
         video_codec: str
-            compression and decompression software for the video (libx264)
+            compression and decompression software for the video (default: libx264).
+            Use "copy" to stream copy without re-encoding (faster but may cause
+            corruption if trimming from non-keyframe positions)
         audio_codec: str
-            compression and decompression sfotware for the audio (aac)
+            compression and decompression software for the audio (default: aac).
+            Use "copy" to stream copy without re-encoding
         crf: str
             constant rate factor - an encoding mode that adjusts the file data rate up
             or down to achieve a selected quality level rather than a specific data
@@ -143,30 +147,51 @@ class MediaEditor:
         start_time_hms_time_format = seconds_to_hms_time_format(start_time)
         duration_hms_time_format = seconds_to_hms_time_format(duration_secs)
 
-        # Initialize ffmpeg command with parameters that do not depend on conditional
-        # logic
-        ffmpeg_command = [
-            "ffmpeg",
-            "-y",
-            "-ss",
-            start_time_hms_time_format,
-            "-t",
-            duration_hms_time_format,
-            "-i",
-            media_file.path,
-            "-c:v",
-            video_codec,
-            "-preset",
-            preset,
-            "-c:a",
-            audio_codec,
-            "-map",
-            "0",  # include all streams from input file to output file
-            "-crf",
-            crf,
-            "-threads",
-            num_threads,
-        ]
+        # Default behavior: use re-encoding (libx264/aac) for reliable trimming
+        # When using video_codec="copy", special handling is needed to avoid corruption
+        # from non-keyframe positions. We support it but recommend re-encoding.
+        is_copy_codec = video_codec.lower() == "copy"
+
+        # Initialize ffmpeg command base
+        ffmpeg_command = ["ffmpeg", "-y"]
+
+        # For encoding (default): place -ss before -i for faster keyframe-based seeking
+        # Re-encoding allows accurate frame positioning regardless of keyframe location
+        # For copy codec: place -ss after -i for frame-accurate seeking (slower)
+        if not is_copy_codec:
+            ffmpeg_command.extend(["-ss", start_time_hms_time_format])
+
+        ffmpeg_command.extend(["-i", media_file.path])
+
+        # For copy codec: place -ss after -i for accurate seeking and add timestamp reset
+        if is_copy_codec:
+            # Seek after input for frame-accurate positioning
+            ffmpeg_command.extend(["-ss", start_time_hms_time_format])
+            # Reset timestamps to start from 0 to prevent corruption
+            # This is critical when using copy codec to avoid timestamp issues
+            ffmpeg_command.extend(["-avoid_negative_ts", "make_zero"])
+
+        # Add duration/trimming parameter
+        ffmpeg_command.extend(["-t", duration_hms_time_format])
+
+        ffmpeg_command.extend(
+            [
+                "-c:v",
+                video_codec,
+                "-c:a",
+                audio_codec,
+                "-map",
+                "0",  # include all streams from input file to output file
+            ]
+        )
+
+        # Only add encoding-specific parameters when not using copy codec
+        # (copy codec ignores these parameters, but we skip them for clarity)
+        if not is_copy_codec:
+            ffmpeg_command.extend(["-preset", preset, "-crf", crf])
+
+        # Note: -threads parameter is not needed for copy codec, but harmless
+        ffmpeg_command.extend(["-threads", num_threads])
 
         # only add the crop filter if cropping parameters are provided
         if crop_height is not None and crop_width is not None and crop_x is not None:
@@ -185,6 +210,8 @@ class MediaEditor:
             ffmpeg_command,
             capture_output=True,
             text=True,
+            encoding="utf-8",
+            errors="ignore",
         )
 
         msg = (
@@ -235,9 +262,12 @@ class MediaEditor:
         overwrite: bool
             Overwrites 'copied_media_file_path' if True; does not overwrite if False
         video_codec: str
-            compression and decompression software for the video (libx264)
+            compression and decompression software for the video (default: libx264).
+            Use "copy" to stream copy without re-encoding (faster but may cause
+            corruption if trimming from non-keyframe positions)
         audio_codec: str
-            compression and decompression sfotware for the audio (aac)
+            compression and decompression software for the audio (default: aac).
+            Use "copy" to stream copy without re-encoding
         crf: str
             constant rate factor - an encoding mode that adjusts the file data rate up
             or down to achieve a selected quality level rather than a specific data
@@ -313,9 +343,12 @@ class MediaEditor:
         overwrite: bool
             Overwrites 'transcoded_media_file_path' if True; does not overwrite if False
         video_codec: str
-            compression and decompression software for the video (libx264)
+            compression and decompression software for the video (default: libx264).
+            Use "copy" to stream copy without re-encoding (faster but may cause
+            corruption if trimming from non-keyframe positions)
         audio_codec: str
-            compression and decompression sfotware for the audio (aac)
+            compression and decompression software for the audio (default: aac).
+            Use "copy" to stream copy without re-encoding
         crf: str
             constant rate factor - an encoding mode that adjusts the file data rate up
             or down to achieve a selected quality level rather than a specific data
@@ -408,9 +441,12 @@ class MediaEditor:
         end_time: float
             the time in seconds the trimmed media file ends
         video_codec: str
-            compression and decompression software for the video (libx264)
+            compression and decompression software for the video (default: libx264).
+            Use "copy" to stream copy without re-encoding (faster but may cause
+            corruption if trimming from non-keyframe positions)
         audio_codec: str
-            compression and decompression sfotware for the audio (aac)
+            compression and decompression software for the audio (default: aac).
+            Use "copy" to stream copy without re-encoding
         crf: str
             constant rate factor - an encoding mode that adjusts the file data rate up
             or down to achieve a selected quality level rather than a specific data
@@ -580,6 +616,8 @@ class MediaEditor:
             ],
             capture_output=True,
             text=True,
+            encoding="utf-8",
+            errors="ignore",
         )
         msg = (
             "\n{0}\n"
@@ -670,9 +708,12 @@ class MediaEditor:
         end_time: float
             the time in seconds the trimmed media file ends
         video_codec: str
-            compression and decompression software for the video (libx264)
+            compression and decompression software for the video (default: libx264).
+            Use "copy" to stream copy without re-encoding (faster but may cause
+            corruption if trimming from non-keyframe positions)
         audio_codec: str
-            compression and decompression sfotware for the audio (aac)
+            compression and decompression software for the audio (default: aac).
+            Use "copy" to stream copy without re-encoding
         crf: str
             constant rate factor - an encoding mode that adjusts the file data rate up
             or down to achieve a selected quality level rather than a specific data
@@ -842,6 +883,8 @@ class MediaEditor:
             ],
             capture_output=True,
             text=True,
+            encoding="utf-8",
+            errors="ignore",
         )
 
         msg = (
@@ -943,7 +986,11 @@ class MediaEditor:
                 "-vf",
                 "setpts=PTS-STARTPTS",
                 concatenated_media_file_path,
-            ]
+            ],
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="ignore",
         )
         logging.debug("Concatenation complete")
         media_paths_file.delete()
@@ -1083,6 +1130,8 @@ class MediaEditor:
             ],
             capture_output=True,
             text=True,
+            encoding="utf-8",
+            errors="ignore",
         )
 
         msg = (

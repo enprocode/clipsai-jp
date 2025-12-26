@@ -1,3 +1,28 @@
+"""
+ClipsAI-JP: 日本語専用動画クリップ自動生成ライブラリ
+
+このパッケージは、長い動画を自動的にクリップに変換するオープンソースの
+Pythonライブラリです。日本語の文字起こしと文分割に対応しています。
+"""
+
+# 標準ライブラリ
+import warnings
+
+# 警告フィルタの設定
+# PyTorchのpynvml非推奨警告を非表示
+warnings.filterwarnings(
+    "ignore",
+    category=FutureWarning,
+    message=".*pynvml.*",
+)
+
+# pyannote.audioのtorchaudio非推奨API警告を非表示
+warnings.filterwarnings(
+    "ignore",
+    category=UserWarning,
+    message=".*torchaudio.*list_audio_backends.*",
+)
+
 # Functions
 from .clip.clipfinder import ClipFinder
 from .media.audio_file import AudioFile

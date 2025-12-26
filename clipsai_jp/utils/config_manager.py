@@ -2,6 +2,7 @@
 Defines an abstract class for getting information about and validating configuration
 settings for machine learning model classes.
 """
+
 # standard library imports
 import abc
 

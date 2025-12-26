@@ -1,6 +1,7 @@
 """
 Checking the types of variables, lists, and dictionaries.
 """
+
 # standard library imports
 import logging
 

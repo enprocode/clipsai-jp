@@ -2,7 +2,7 @@ from setuptools import find_packages, setup  # type: ignore
 
 setup(
     name="clipsai-jp",
-    version="1.0.2",
+    version="1.0.3",
     description=(
         "Clips AIは、長い動画を自動的にクリップに変換するオープンソースのPythonライブラリです（日本語専用版）"
     ),
@@ -70,6 +70,13 @@ setup(
     },
     include_package_data=True,
     extras_require={
+        # 日本語形態素解析（オプション、推奨）
+        # MeCabがインストールされていない場合、自動的にNLTKにフォールバックします
+        # mecabパッケージはMeCab本体も含まれており、Windowsでもpip installのみで使用可能
+        # 公式サイト: https://pypi.org/project/mecab/
+        "mecab": [
+            "mecab>=0.996.0",
+        ],
         # GPUメモリ監視（オプション）
         "gpu": [
             "pynvml>=11.0.0,<14.0.0",

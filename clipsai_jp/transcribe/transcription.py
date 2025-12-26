@@ -7,6 +7,7 @@ Notes
 - NLTK used for tokenizing sentences
 - Faster-Whisper GitHub: https://github.com/guillaumekln/faster-whisper
 """
+
 # standard library imports
 from __future__ import annotations
 from datetime import datetime
@@ -25,6 +26,8 @@ from clipsai_jp.utils.type_checker import TypeChecker
 import nltk
 from nltk.tokenize import sent_tokenize
 
+logger = logging.getLogger(__name__)
+
 # Download NLTK data (punkt for older versions, punkt_tab for NLTK 3.8+)
 try:
     nltk.download("punkt", quiet=True)
@@ -34,6 +37,15 @@ try:
     nltk.download("punkt_tab", quiet=True)
 except Exception:
     pass
+
+# Japanese sentence splitter (MeCab)
+try:
+    from .japanese_sentence_splitter import JapaneseSentenceSplitter
+
+    JAPANESE_SPLITTER_AVAILABLE = True
+except ImportError:
+    JAPANESE_SPLITTER_AVAILABLE = False
+    JapaneseSentenceSplitter = None
 
 
 class Transcription:
@@ -396,9 +408,9 @@ class Transcription:
         json_file.create(transcription_dict)
         return json_file
 
-    def print_char_info(self) -> None:
+    def log_char_info(self) -> None:
         """
-        Pretty prints the character info for easy viewing
+        Logs the character info for easy viewing
 
         Parameters
         ----------
@@ -409,19 +421,24 @@ class Transcription:
         None
         """
         title = "Character Info"
-        print(title)
-        print("-" * len(title))
+        logger.info(title)
+        logger.info("-" * len(title))
         for i, char_info in enumerate(self.get_char_info()):
-            print("char: {}".format(char_info["char"]))
-            print("start_time: {}".format(char_info["start_time"]), end=" | ")
-            print("end_time: {}".format(char_info["end_time"]))
-            print("index: {}".format(i), end=" | ")
-            print("word_index: {}".format(char_info["work_index"]), end=" | ")
-            print("sentence_index: {}\n".format(char_info["sentence_index"]))
+            logger.info("char: {}".format(char_info["char"]))
+            logger.info(
+                "start_time: {} | end_time: {}".format(
+                    char_info["start_time"], char_info["end_time"]
+                )
+            )
+            logger.info(
+                "index: {} | word_index: {} | sentence_index: {}".format(
+                    i, char_info["work_index"], char_info["sentence_index"]
+                )
+            )
 
-    def print_word_info(self) -> None:
+    def log_word_info(self) -> None:
         """
-        Pretty prints the word info for easy viewing
+        Logs the word info for easy viewing
 
         Parameters
         ----------
@@ -432,20 +449,25 @@ class Transcription:
         None
         """
         title = "Word Info"
-        print(title)
-        print("-" * len(title))
+        logger.info(title)
+        logger.info("-" * len(title))
         for i, word_info in enumerate(self.get_word_info()):
-            print("word: '{}'".format(word_info["word"]), end=" | ")
-            print("word_index: {}".format(i))
-            print("speaker: {}".format(word_info["speaker"]))
-            print("start_time: {}".format(word_info["start_time"]), end=" | ")
-            print("end_time: {}".format(word_info["end_time"]))
-            print("start_char: {}".format(word_info["start_char"]), end=" | ")
-            print("end_char: {}\n".format(word_info["end_char"]))
+            logger.info("word: '{}' | word_index: {}".format(word_info["word"], i))
+            logger.info("speaker: {}".format(word_info["speaker"]))
+            logger.info(
+                "start_time: {} | end_time: {}".format(
+                    word_info["start_time"], word_info["end_time"]
+                )
+            )
+            logger.info(
+                "start_char: {} | end_char: {}".format(
+                    word_info["start_char"], word_info["end_char"]
+                )
+            )
 
-    def print_sentence_info(self) -> None:
+    def log_sentence_info(self) -> None:
         """
-        Pretty prints the sentence info for easy viewing
+        Logs the sentence info for easy viewing
 
         Parameters
         ----------
@@ -456,15 +478,21 @@ class Transcription:
         None
         """
         title = "Sentence Info"
-        print(title)
-        print("-" * len(title))
+        logger.info(title)
+        logger.info("-" * len(title))
         for i, sentence_info in enumerate(self.get_sentence_info()):
-            print("sentence: '{}'".format(sentence_info["sentence"]))
-            print("sentence_index: {}".format(i))
-            print("start_char: {}".format(sentence_info["start_char"]), end=" | ")
-            print("end_char: {}".format(sentence_info["end_char"]))
-            print("start_time: {}".format(sentence_info["start_time"]), end=" | ")
-            print("end_time: {}\n".format(sentence_info["end_time"]))
+            logger.info("sentence: '{}'".format(sentence_info["sentence"]))
+            logger.info("sentence_index: {}".format(i))
+            logger.info(
+                "start_char: {} | end_char: {}".format(
+                    sentence_info["start_char"], sentence_info["end_char"]
+                )
+            )
+            logger.info(
+                "start_time: {} | end_time: {}".format(
+                    sentence_info["start_time"], sentence_info["end_time"]
+                )
+            )
 
     def _find_index(
         self, transcript_info: list[dict], target_time: float, type_of_time: str
@@ -797,7 +825,32 @@ class Transcription:
         None
         """
         char_info = self.get_char_info()
-        sentences = sent_tokenize(self.text)
+
+        # 日本語の場合はMeCabを使用、それ以外はNLTKを使用
+        if self._language == "ja" and JAPANESE_SPLITTER_AVAILABLE:
+            try:
+                splitter = JapaneseSentenceSplitter()
+                sentences = splitter.split_sentences(self.text)
+                logging.info(
+                    f"Using MeCab for Japanese sentence splitting: "
+                    f"{len(sentences)} sentences"
+                )
+            except ImportError:
+                # MeCabがインストールされていない場合
+                logging.warning(
+                    "MeCab not available, falling back to NLTK for "
+                    "sentence splitting"
+                )
+                sentences = sent_tokenize(self.text)
+            except Exception as e:
+                # MeCabの初期化エラーなど
+                logging.warning(
+                    f"MeCab error: {e}, falling back to NLTK for " "sentence splitting"
+                )
+                sentences = sent_tokenize(self.text)
+        else:
+            # 日本語以外はNLTKを使用
+            sentences = sent_tokenize(self.text)
 
         # final destination for sentence_info
         sentence_info = []

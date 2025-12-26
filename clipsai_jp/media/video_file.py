@@ -5,6 +5,7 @@ Notes
 -----
 - VideoFiles are defined to be files that contain only video and no other media.
 """
+
 # standard library imports
 from functools import lru_cache
 import logging

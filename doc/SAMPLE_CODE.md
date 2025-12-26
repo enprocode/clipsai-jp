@@ -112,11 +112,89 @@ pip install -e .[dev]
 - 動画を文字起こし
 - トランスクリプトからクリップを検出
 - クリップの開始時間と終了時間を表示
+- クリップ動画、字幕ファイル、文字起こしデータを出力
 
 **使用方法:**
 ```bash
 python sample/clip_video.py
 ```
+
+**出力ファイル:**
+
+このサンプルコードは、元の動画ファイル名を基準とした統一された命名規則で、以下のファイルを出力します。
+
+元の動画ファイルが `test.mp4` の場合の出力例：
+
+**全体の文字起こしデータ:**
+- `test_transcription.json` - 全体の文字起こしデータ（JSON形式、タイムスタンプ情報を含む）
+- `test_transcription.txt` - 全体の文字起こしテキスト（プレーンテキスト）
+
+**各クリップの出力ファイル（クリップごとに5つのファイル）:**
+
+各クリップ（例：クリップ1）に対して、以下のファイルが生成されます：
+
+1. **クリップ動画**: `test_clip_001.mp4` - トリミングされた動画ファイル
+2. **字幕ファイル（SRT形式）**: `test_clip_001.srt` - SubRip字幕形式（動画編集ソフトで使用可能）
+3. **字幕ファイル（VTT形式）**: `test_clip_001.vtt` - WebVTT形式（Webプレーヤーで使用可能）
+4. **文字起こしデータ（JSON形式）**: `test_clip_001_transcription.json` - クリップの文字起こしデータ（タイムスタンプ、文、文字情報を含む）
+5. **文字起こしテキスト**: `test_clip_001_transcription.txt` - クリップの文字起こしテキスト（プレーンテキスト）
+
+**ファイル名の命名規則:**
+
+- 元の動画ファイル名（拡張子を除く）がベース名として使用されます
+- クリップファイルは `{元のファイル名}_clip_{番号}` の形式で命名されます
+- 例：`my_video.mp4` → `my_video_clip_001.mp4`, `my_video_clip_002.mp4`, ...
+
+**字幕ファイルの特徴:**
+
+- **SRT形式**: 動画編集ソフト（Premiere Pro、Final Cut Pro、DaVinci Resolveなど）で直接使用可能
+- **VTT形式**: Webブラウザや動画プレーヤーで使用可能
+- 字幕の時間はクリップ開始時刻を0秒にオフセットしているため、クリップ動画と直接組み合わせて使用できます
+
+**出力ディレクトリ:**
+
+すべての出力ファイルは、`sample/output/`ディレクトリに保存されます（デフォルト設定）。
+
+**出力ファイル構造の例:**
+
+3つのクリップが検出された場合の出力例：
+
+```
+output/
+├── test_transcription.json              # 全体の文字起こし（JSON）
+├── test_transcription.txt               # 全体の文字起こし（テキスト）
+├── test_clip_001.mp4                    # クリップ1の動画
+├── test_clip_001.srt                    # クリップ1の字幕（SRT）
+├── test_clip_001.vtt                    # クリップ1の字幕（VTT）
+├── test_clip_001_transcription.json     # クリップ1の文字起こし（JSON）
+├── test_clip_001_transcription.txt      # クリップ1の文字起こし（テキスト）
+├── test_clip_002.mp4                    # クリップ2の動画
+├── test_clip_002.srt                    # クリップ2の字幕（SRT）
+├── test_clip_002.vtt                    # クリップ2の字幕（VTT）
+├── test_clip_002_transcription.json     # クリップ2の文字起こし（JSON）
+├── test_clip_002_transcription.txt      # クリップ2の文字起こし（テキスト）
+├── test_clip_003.mp4                    # クリップ3の動画
+├── test_clip_003.srt                    # クリップ3の字幕（SRT）
+├── test_clip_003.vtt                    # クリップ3の字幕（VTT）
+├── test_clip_003_transcription.json     # クリップ3の文字起こし（JSON）
+└── test_clip_003_transcription.txt      # クリップ3の文字起こし（テキスト）
+```
+
+**ファイル名によるデータ管理:**
+
+すべてのファイルが元の動画ファイル名を基準とした統一された命名規則で保存されるため、以下のメリットがあります：
+
+- **ファイルの関連付けが容易**: 同じベース名を持つファイルでグループ化可能
+- **元の動画ファイルを特定しやすい**: ファイル名から元の動画ファイルを特定可能
+- **複数の動画を処理しても整理しやすい**: 各動画ごとに独立したファイルセットが生成される
+
+**字幕ファイルの使用例:**
+
+生成された字幕ファイル（SRT/VTT）は、以下のような用途で使用できます：
+
+- **動画編集ソフトでの使用**: Premiere Pro、Final Cut Pro、DaVinci Resolveなどで動画に字幕を追加
+- **Webプレーヤーでの使用**: VTT形式はHTML5の`<video>`タグで直接使用可能
+- **YouTube動画への字幕追加**: SRTファイルをアップロードして字幕として使用
 
 **ClipFinderのパラメータ調整:**
 
@@ -242,7 +320,26 @@ $env:GEMINI_API_KEY="your_api_key_here"
 set GEMINI_API_KEY=your_api_key_here
 ```
 
-**注意:** Gemini APIはオプショナル機能です。APIキーが設定されていない場合や、API呼び出しに失敗した場合でも、TextTilingアルゴリズムのみで動作します。
+**注意:** 
+- Gemini APIはオプショナル機能です。APIキーが設定されていない場合や、API呼び出しに失敗した場合でも、TextTilingアルゴリズムのみで動作します。
+- MeCabもオプショナル機能です。MeCabがインストールされていない場合、自動的にNLTKにフォールバックします。ただし、MeCabをインストールすることで、日本語の文分割精度が向上し、より自然な動画分割が可能になります。
+
+**MeCabによる日本語文分割（自動使用）:**
+
+ClipsAI-JPは、日本語の文字起こしに対して自動的にMeCabを使用して文分割を行います。これにより、より自然で正確な文分割が可能になり、クリップ検出の精度が向上します。
+
+- MeCabがインストールされている場合: 自動的にMeCabを使用して日本語の文構造を考慮した文分割を実行
+- MeCabがインストールされていない場合: 自動的にNLTKにフォールバック（既存の動作を維持）
+- 元の文字列の空白・改行を保持: MeCabによる文分割では、元の文字列の空白や改行を保持するため、タイムスタンプのマッピングが正確に機能します（改行が句点代わりに使われる字幕でも対応可能）
+- MeCabのインストール方法:
+  - **全プラットフォーム（推奨）:** `pip install mecab`
+    - [PyPIのmecabパッケージ](https://pypi.org/project/mecab/)を使用します
+    - MeCab本体も含まれており、システムレベルのインストールは不要です
+    - Windows、Mac、Linuxすべてで`pip install`のみで使用可能
+  - **Mac/Linux（代替方法）:** システムパッケージマネージャーを使用する場合
+    - Mac: `brew install mecab mecab-ipadic`
+    - Linux: `sudo apt-get install mecab libmecab-dev mecab-ipadic-utf8`
+    - その後、`pip install mecab-python3`でPythonバインディングをインストール
 
 **トラブルシューティング:**
 - クリップが1つも見つからない場合: `cutoff_policy="low"`に変更してみてください
@@ -251,6 +348,7 @@ set GEMINI_API_KEY=your_api_key_here
 - 日本語動画の精度を向上させたい場合: `embedding_model="japanese"`を指定してください
 - より高精度な検出が必要な場合: `embedding_model="high_accuracy"`または`"large"`を指定してください（処理時間が長くなります）
 - クリップ検出精度を最大限に向上させたい場合: `use_gemini=True`を指定してGemini APIを使用してください
+- 日本語の文分割が不自然な場合: MeCabをインストールすることで、より自然な文分割が可能になります（自動的に使用されます）
 
 ### 2. `sample/resize_video.py`
 動画を指定したアスペクト比にリサイズするサンプルです。
@@ -376,7 +474,8 @@ pip install -e .
 ```bash
 # faster-whisper は numpy>=1.24.0 を要求（より柔軟なバージョン制約）
 # torch は pyannote.audio の要件に合わせて設定（pyannote.audio 3.3.0+ は torch>=2.0.0 を要求）
-pip install "numpy>=1.24.0,<2.1.0" "torch>=2.0.0,<3.0.0"
+# torchaudio 2.9.0以降ではAudioMetaDataが削除されているため、torchも2.9.0未満に制限
+pip install "numpy>=1.24.0,<2.1.0" "torch>=2.0.0,<2.9.0" "torchaudio>=2.0.0,<2.9.0"
 
 # その後、clipsai-jpを再インストール
 pip install -e .
@@ -389,7 +488,8 @@ pip install -e .
 pip uninstall numpy torch torchaudio torchvision facenet-pytorch -y
 
 # faster-whisper と pyannote.audio の要件を満たすバージョンをインストール
-pip install "numpy>=1.24.0,<2.1.0" "torch>=2.0.0,<3.0.0"
+# torchaudio 2.9.0以降ではAudioMetaDataが削除されているため、torchも2.9.0未満に制限
+pip install "numpy>=1.24.0,<2.1.0" "torch>=2.0.0,<2.9.0" "torchaudio>=2.0.0,<2.9.0"
 
 # clipsai-jpを再インストール
 pip install -e .

@@ -3,7 +3,7 @@ __pycache__/
 *.py[cod]
 *$py.class
 .pypirc
-video.mp4
+*.mp4
 sample/video.mp4
 sample/output/
 # C extensions

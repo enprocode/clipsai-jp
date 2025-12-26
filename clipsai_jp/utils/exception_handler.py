@@ -1,6 +1,7 @@
 """
 Handles and extracts useful information from errors (Exceptions)
 """
+
 # standard library imports
 import sys
 import traceback

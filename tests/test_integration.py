@@ -4,6 +4,7 @@ Integration tests for ClipsAI workflow components.
 These tests verify that the main workflow components (Transcriber, ClipFinder, resize)
 can be instantiated and work together correctly with updated dependencies.
 """
+
 # standard library imports
 import pytest
 
@@ -45,13 +46,18 @@ class TestWorkflowComponents:
             # that's a compatibility issue
             error_msg = str(e).lower()
             error_type = type(e).__name__
-            
+
             # Acceptable errors: authentication, download, network issues
-            if any(keyword in error_msg for keyword in ["token", "auth", "download", "gated", "private", "none"]):
+            if any(
+                keyword in error_msg
+                for keyword in ["token", "auth", "download", "gated", "private", "none"]
+            ):
                 # Authentication/download error is expected with mock token
                 # This confirms the parameter compatibility is working
                 pass
-            elif error_type == "TypeError" and ("unexpected keyword" in error_msg or "got an unexpected" in error_msg):
+            elif error_type == "TypeError" and (
+                "unexpected keyword" in error_msg or "got an unexpected" in error_msg
+            ):
                 # This would indicate a parameter compatibility issue
                 pytest.fail(f"Parameter compatibility issue: {e}")
             else:
@@ -61,7 +67,9 @@ class TestWorkflowComponents:
                     # This is likely from a failed pipeline download, which is expected
                     pass
                 else:
-                    pytest.fail(f"Unexpected error during PyannoteDiarizer instantiation: {e}")
+                    pytest.fail(
+                        f"Unexpected error during PyannoteDiarizer instantiation: {e}"
+                    )
 
     def test_resize_function_import(self):
         """Test that resize function can be imported and is callable."""
@@ -79,14 +87,16 @@ class TestWorkflowComponents:
         """Test that MPS (Apple Silicon) support is available if on Mac."""
         import torch
         import platform
-        
+
         valid_devices = get_valid_torch_devices()
         assert "mps" in valid_devices, "MPS should be in valid devices list"
-        
+
         # Check if MPS is actually available (only on Mac with Apple Silicon)
         if platform.system() == "Darwin":
             # On Mac, check if MPS backend is available
-            mps_available = hasattr(torch.backends, "mps") and torch.backends.mps.is_available()
+            mps_available = (
+                hasattr(torch.backends, "mps") and torch.backends.mps.is_available()
+            )
             # This is informational - MPS may or may not be available depending on hardware
             # The important thing is that the code supports it
             assert True  # Test passes if code supports MPS
@@ -99,15 +109,15 @@ class TestComponentIntegration:
         """Test that Transcriber and ClipFinder use compatible device settings."""
         transcriber = Transcriber()
         clip_finder = ClipFinder()
-        
+
         # Both should be able to use the same device
         assert transcriber._device in get_valid_torch_devices()
         assert clip_finder._device in get_valid_torch_devices()
-        
+
         # They should both detect the same default device
         transcriber_device = transcriber._device
         clip_finder_device = clip_finder._device
-        
+
         # Both should use the same compute device detection logic
         default_device = get_compute_device()
         assert transcriber_device == default_device or transcriber_device == "cpu"
@@ -130,7 +140,7 @@ class TestComponentIntegration:
             Word,
             Character,
         )
-        
+
         # Verify all imports succeeded
         assert ClipFinder is not None
         assert Transcriber is not None
@@ -145,4 +155,3 @@ class TestComponentIntegration:
         assert Sentence is not None
         assert Word is not None
         assert Character is not None
-

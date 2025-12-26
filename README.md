@@ -27,6 +27,10 @@ pip install clipsai-jp
 ```
 
 **オプショナル依存関係:**
+- MeCab（日本語の文分割精度向上のため推奨）: `pip install clipsai-jp[mecab]`
+  - MeCabがインストールされていない場合、自動的にNLTKにフォールバックします
+  - MeCab本体も含まれており、Windows、Mac、Linuxすべてで`pip install`のみで使用可能
+  - 公式サイト: https://pypi.org/project/mecab/
 - GPUメモリ監視: `pip install clipsai-jp[gpu]`
 - 開発・テスト用: `pip install clipsai-jp[dev]`
 

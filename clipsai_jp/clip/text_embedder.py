@@ -3,6 +3,7 @@ Embed text using sentence-transformers models.
 
 Supports multiple models for different use cases including Japanese-optimized models.
 """
+
 # 3rd party imports
 import torch
 from sentence_transformers import SentenceTransformer

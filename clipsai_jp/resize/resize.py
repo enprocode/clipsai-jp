@@ -1,6 +1,7 @@
 """
 Resize an asset's media to a 9:16 aspect ratio.
 """
+
 # standard library imports
 import logging
 
