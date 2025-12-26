@@ -2,15 +2,15 @@ from setuptools import find_packages, setup  # type: ignore
 
 setup(
     name="clipsai-jp",
-    version="1.0.3",
+    version="1.0.4",
     description=(
         "Clips AIは、長い動画を自動的にクリップに変換するオープンソースのPythonライブラリです（日本語専用版）"
     ),
     long_description=open("README.md", encoding="utf-8").read(),
     long_description_content_type="text/markdown",
-    author="Benjamin Smidt, Johann Ramirez, Armel Talla",
-    author_email="support@clipsai.com",
-    url="https://clipsai.com/",
+    author="Enpro",
+    author_email="support@enprocode.com",
+    url="https://enprocode.com/",
     license="MIT",
     packages=find_packages(exclude=["tests*"]),
     install_requires=[
