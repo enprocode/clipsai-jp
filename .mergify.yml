@@ -31,11 +31,6 @@ pull_request_rules:
         name: default
 
   # マージ済みブランチの自動削除
-  - name: マージ後にブランチを削除
-    conditions:
-      - merged
-    actions:
-      delete_head_branch: {}
 
   # コンフリクトが発生したPRにラベルを付与してコメント
   - name: コンフリクト発生時に通知
