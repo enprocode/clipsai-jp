@@ -36,4 +36,4 @@ pip install clipsai-jp
 
 ## ドキュメント
 
-使用方法、サンプルコード、パラメータ設定などの詳細については、[`docs/SAMPLE_CODE.md`](docs/SAMPLE_CODE.md)を参照してください。
+使用方法、サンプルコード、パラメータ設定などの詳細については、[`docs/sample-code.md`](docs/sample-code.md)を参照してください。
