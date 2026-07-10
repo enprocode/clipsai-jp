@@ -24,6 +24,19 @@
 import logging
 import os
 
+# サードパーティライブラリ
+# .envファイルから環境変数を読み込む（オプション）
+# python-dotenvパッケージが必要: pip install python-dotenv
+try:
+    from dotenv import load_dotenv  # type: ignore
+
+    # サンプルディレクトリの.envファイルを読み込む（sample/.env.example を参照）
+    env_path = os.path.join(os.path.dirname(__file__), ".env")
+    load_dotenv(env_path)
+except ImportError:
+    # python-dotenvがインストールされていない場合は環境変数のみを使用
+    pass
+
 # ローカルパッケージ
 from clipsai_jp import resize, MediaEditor, AudioVideoFile
 
@@ -46,8 +59,10 @@ def main() -> None:
         raise FileNotFoundError(f"動画ファイルが見つかりません: {video_file_path}")
 
     # Hugging FaceのPyannoteアクセストークン
+    # 環境変数 HF_TOKEN から取得（推奨。sample/.env.example を参照）。
+    # 未設定の場合は下のダミー値を直接書き換えてもよい。
     # トークンの取得方法: https://huggingface.co/pyannote/speaker-diarization-3.0
-    pyannote_auth_token = "your_pyannote_token_here"
+    pyannote_auth_token = os.getenv("HF_TOKEN", "your_pyannote_token_here")
 
     # 出力ディレクトリ（必要に応じて変更してください）
     output_dir = os.path.join(os.path.dirname(video_file_path), "output")

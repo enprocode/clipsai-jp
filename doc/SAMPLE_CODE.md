@@ -272,12 +272,19 @@ clipfinder = ClipFinder(
 
 `.env`ファイルを使用することで、APIキーをコードから分離して管理できます。
 
-1. `sample/.env`ファイルを作成（またはプロジェクトルートに`.env`ファイルを作成）
-2. 以下の内容を記述:
+1. サンプルの雛形 `sample/.env.example` をコピーして `sample/.env` を作成:
+
+```bash
+cp sample/.env.example sample/.env
+```
+
+2. `sample/.env` を開き、各値を自分のキーに書き換える:
 
 ```bash
 # .env
 GEMINI_API_KEY=your_actual_api_key_here
+# リサイズ機能を使う場合は Hugging Face トークンも設定
+HF_TOKEN=your_actual_huggingface_token_here
 ```
 
 3. `python-dotenv`パッケージをインストール（オプション、推奨）:
