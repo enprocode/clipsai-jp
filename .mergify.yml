@@ -19,13 +19,20 @@ queue_rules:
 pull_request_rules:
   # Dependabotのminor/patch更新はCIが通れば自動マージ
   # （requirements.txt側で上限バージョンを固定しているため安全）
-  - name: Dependabot PRの自動マージ（minor/patch）
+  #
+  # ゲートはブランチ名で判定する:
+  # .github/dependabot.yml の minor-and-patch グループには minor/patch 更新
+  # しか含まれず、そのグループPRのブランチ名は dependabot/pip/minor-and-patch-*
+  # になる。major更新は個別PR（ブランチ名が dependabot/pip/<依存名>-*）として
+  # 作成されるため、この条件に一致せず必ず手動レビューになる。
+  # （タイトルの正規表現による判定は不可: Dependabotのmajor更新タイトルは
+  # 「Bump foo from 1.x to 2.0」形式で "major" という語を含まない）
+  - name: Dependabot PRの自動マージ（minor/patchグループのみ）
     conditions:
       - author=dependabot[bot]
+      - head~=^dependabot/pip/minor-and-patch-
       - check-success=test (3.9)
       - check-success=test (3.12)
-      # major更新（個別PRで作成される）は自動マージせず手動レビュー
-      - -title~=(?i)\bmajor\b
     actions:
       queue:
         name: default
