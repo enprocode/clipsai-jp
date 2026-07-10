@@ -70,7 +70,9 @@ printf 'dicdir = %s\n' "$(.venv/bin/python -c 'import unidic_lite; print(unidic_
 
 ## リリース（PyPI）
 
-- `setup.py` のバージョンは一意（同一バージョンの再アップロード不可）
+- バージョンはリポジトリ直下の **`VERSION` ファイルで一元管理**（setup.py・CI・`clipsai_jp.__version__` すべてここから読む）。リリース時は `VERSION` のみ更新する
+- バージョンは一意（同一バージョンの再アップロード不可）
 - `python -m build` でビルド、公開前に TestPyPI で動作確認
 - 再ビルド前に `dist/` を削除
 - ブランチ運用: バージョンブランチ（例 `v1.0.4`）→ PR → main マージの実績あり
+- 本番公開は GitHub Release 作成で発火し、Release タグと `VERSION` の一致が CI で検証される
