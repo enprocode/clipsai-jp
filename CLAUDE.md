@@ -57,9 +57,13 @@ printf 'dicdir = %s\n' "$(.venv/bin/python -c 'import unidic_lite; print(unidic_
 |---|---|---|
 | torch / torchaudio | `<2.9.0` | torchaudio 2.9 で AudioMetaData が削除 |
 | pyannote.audio | `>=3.3.0,<4.0.0` | 4.x は torchcodec>=0.7 を要求し torch<2.9 と ABI 衝突（import 不能） |
+| pyannote.core | `<6.0.0` | pyannote.audio 3.x が pyannote.core<6.0 を要求 |
 | mediapipe | `>=0.10.20,<0.10.30` | 0.10.30 でレガシー solutions API（顔検出で使用）が削除 |
+| numpy | `<2.0.0` | mediapipe が numpy<2 を要求 |
 
-依存を追加・変更する場合は `setup.py` と `requirements.txt` の**両方**を更新する。
+依存を追加・変更する場合は `setup.py` と `requirements.txt` の**両方**を更新する。Dependabot がこれらの上限を超える更新を提案しても解決不能なので、`.github/dependabot.yml` の ignore ルールで抑止済み。
+
+**torch の既知 CVE について（意図的に未対応）**: torch には未修正の CVE が複数ある（CVE-2025-2999 [medium] unpack_sequence / CVE-2025-3001 [low] lstm_cell / CVE-2025-3000 [low] jit.script、修正版なし）。修正版（2.9.1 / 2.10.0）は上記 `torch<2.9` ピンの外側にあり、取り込むには torchaudio 2.9・pyannote.audio 4.x への移行が必要。いずれも「特定の torch 内部関数に未信頼入力を渡せる場合」のローカルなメモリ破損で、本ライブラリの用途（ユーザー自身の動画処理）では実効リスクが低いため tolerable risk として受容している。**torch のピンを外して "CVE を直す" と依存全体が壊れるので注意**。将来 pyannote 4.x へ移行する際にまとめて見直すこと。
 
 ## コーディング規約（.cursorrules より要点）
 
