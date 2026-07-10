@@ -4,7 +4,7 @@
 
 # Core dependencies
 # mediapipe が numpy<2 を要求するため 2.0 未満に制限
-numpy>=1.21.0,<2.0.0
+numpy>=1.26.4,<2.0.0
 pandas>=2.0.0,<3.0.0
 scipy>=1.15.3,<2.0.0
 
