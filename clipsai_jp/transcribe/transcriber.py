@@ -219,11 +219,17 @@ class Transcriber:
 
             # Add space after segment if not the last segment
             if seg_idx < len(all_segments) - 1:
+                # 次のセグメントの開始時間を超えないように制限する
+                # （超えると時間の重なりが生じ、二分探索による時間→文字の
+                # インデックス変換が壊れるため）
+                next_start = all_segments[seg_idx + 1].start
+                space_end = min(segment.end + 0.1, next_start)
+                space_end = max(space_end, segment.end)
                 char_info.append(
                     {
                         "char": " ",
                         "start_time": segment.end,
-                        "end_time": segment.end + 0.1,  # Small gap
+                        "end_time": space_end,
                         "speaker": None,
                     }
                 )

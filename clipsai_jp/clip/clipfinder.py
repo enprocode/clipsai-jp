@@ -223,6 +223,7 @@ class ClipFinder:
                     clips,  # TextTilingの結果
                     gemini_clips,  # Geminiの結果
                     self._gemini_priority,
+                    transcription,
                 )
 
                 logging.info(
@@ -277,8 +278,8 @@ class ClipFinder:
         k: int,
         min_clip_duration: int,
         max_clip_duration: int,
-        final_clips: list[dict] = [],
-    ) -> tuple[list, torch.Tensor]:
+        final_clips: list[dict] = None,
+    ) -> list[dict]:
         """
         Segments the embeddings multiple rounds using the TextTiling algorithm.
 
@@ -302,6 +303,9 @@ class ClipFinder:
         list[dict]
             list of dictionaries containing information about the chosen clips
         """
+        # ミュータブルなデフォルト引数は呼び出し間で共有されるため、Noneで受けて初期化する
+        if final_clips is None:
+            final_clips = []
         self._text_tile_round = 0
         while len(clip_embeddings) > 8:
             self._text_tile_round += 1
@@ -547,6 +551,7 @@ class ClipFinder:
         texttiling_clips: List[dict],
         gemini_clips: List[dict],
         gemini_priority: float,
+        transcription: Transcription,
     ) -> List[dict]:
         """
         TextTilingとGeminiの提案を統合
@@ -559,6 +564,8 @@ class ClipFinder:
             Gemini APIで提案されたクリップリスト
         gemini_priority: float
             Geminiの提案の重み（0.0-1.0）
+        transcription: Transcription
+            文字起こしオブジェクト（統合後の時間に対応する文字インデックスの再計算に使用）
 
         Returns
         -------
@@ -605,6 +612,22 @@ class ClipFinder:
                         + gemini_clip["end_time"] * gemini_priority
                     ) / total_weight
                     existing_clip["weight"] = 1.0
+
+                    # 時間を更新したため、文字インデックスも新しい時間に合わせて再計算する
+                    # （更新しないと時間と文字範囲が不整合になる）
+                    try:
+                        existing_clip["start_char"] = transcription.find_char_index(
+                            existing_clip["start_time"], type_of_time="start"
+                        )
+                        existing_clip["end_char"] = transcription.find_char_index(
+                            existing_clip["end_time"], type_of_time="end"
+                        )
+                    except Exception as e:
+                        logging.warning(
+                            f"Failed to recompute char indices for merged clip "
+                            f"({existing_clip['start_time']:.2f}s - "
+                            f"{existing_clip['end_time']:.2f}s): {e}"
+                        )
                     break
 
             if not is_duplicate:
