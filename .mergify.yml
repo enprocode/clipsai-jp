@@ -1,0 +1,51 @@
+# Mergify設定
+# https://docs.mergify.com/
+#
+# 前提: リポジトリに Mergify GitHub App のインストールが必要
+# https://github.com/apps/mergify
+
+queue_rules:
+  - name: default
+    # マージキューに入る条件 / マージされる条件
+    # チェック名は .github/workflows/tests.yml の test ジョブ（matrix）に対応
+    queue_conditions:
+      - check-success=test (3.9)
+      - check-success=test (3.12)
+    merge_conditions:
+      - check-success=test (3.9)
+      - check-success=test (3.12)
+    merge_method: merge
+
+pull_request_rules:
+  # Dependabotのminor/patch更新はCIが通れば自動マージ
+  # （requirements.txt側で上限バージョンを固定しているため安全）
+  - name: Dependabot PRの自動マージ（minor/patch）
+    conditions:
+      - author=dependabot[bot]
+      - check-success=test (3.9)
+      - check-success=test (3.12)
+      # major更新（個別PRで作成される）は自動マージせず手動レビュー
+      - -title~=(?i)\bmajor\b
+    actions:
+      queue:
+        name: default
+
+  # マージ済みブランチの自動削除
+  - name: マージ後にブランチを削除
+    conditions:
+      - merged
+    actions:
+      delete_head_branch: {}
+
+  # コンフリクトが発生したPRにラベルを付与してコメント
+  - name: コンフリクト発生時に通知
+    conditions:
+      - conflict
+      - -closed
+    actions:
+      label:
+        add:
+          - conflict
+      comment:
+        message: |
+          このPRはmainとコンフリクトしています。リベースまたはマージで解消してください。
