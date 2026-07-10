@@ -21,6 +21,19 @@ ClipsAI-JPの完全な使用例
 import logging
 import os
 
+# サードパーティライブラリ
+# .envファイルから環境変数を読み込む（オプション）
+# python-dotenvパッケージが必要: pip install python-dotenv
+try:
+    from dotenv import load_dotenv  # type: ignore
+
+    # サンプルディレクトリの.envファイルを読み込む（sample/.env.example を参照）
+    env_path = os.path.join(os.path.dirname(__file__), ".env")
+    load_dotenv(env_path)
+except ImportError:
+    # python-dotenvがインストールされていない場合は環境変数のみを使用
+    pass
+
 # ローカルパッケージ
 from clipsai_jp import ClipFinder, Transcriber, resize, MediaEditor, AudioVideoFile
 
@@ -36,9 +49,9 @@ def main() -> None:
     """ClipsAI-JPの完全な使用例のメイン処理"""
     # 設定
     video_file_path = "video.mp4"
-    pyannote_auth_token = (
-        "your_pyannote_token_here"  # リサイズ機能を使用する場合のみ必要
-    )
+    # リサイズ機能を使用する場合のみ必要。環境変数 HF_TOKEN から取得（推奨）。
+    # トークン発行とモデル同意の手順: doc/SAMPLE_CODE.md「Hugging Faceトークンの取得方法」
+    pyannote_auth_token = os.getenv("HF_TOKEN", "your_pyannote_token_here")
 
     # ファイル存在確認
     if not os.path.exists(video_file_path):
