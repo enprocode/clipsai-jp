@@ -15,7 +15,7 @@ setup(
     packages=find_packages(exclude=["tests*"]),
     install_requires=[
         # コア依存関係（最小限）
-        "numpy>=1.24.0,<2.1.0",
+        "numpy>=1.24.0,<2.3.0",
         
         # 文字起こし（faster-whisperを使用）
         "faster-whisper>=1.0.0,<2.0.0",

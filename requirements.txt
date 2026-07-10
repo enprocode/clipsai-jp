@@ -3,7 +3,7 @@
 # For production, use setup.py which specifies version ranges
 
 # Core dependencies
-numpy>=1.21.0,<3.0.0
+numpy>=2.2.6,<3.0.0
 pandas>=2.0.0,<3.0.0
 scipy>=1.15.3,<2.0.0
 
