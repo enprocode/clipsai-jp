@@ -38,12 +38,16 @@ setup(
         "scikit-learn>=1.3.0,<2.0.0",
         
         # 話者分離
-        "pyannote.audio>=3.3.0,<5.0.0",
+        # pyannote.audio 4.x は torchcodec>=0.7 を要求し、torchcodec は torch 2.9以降
+        # とペアになるため、本プロジェクトの torch<2.9 制約と衝突する（import不能になる）
+        # → torchcodec不要の3.x系に制限
+        "pyannote.audio>=3.3.0,<4.0.0",
         "pyannote.core>=5.0.0,<7.0.0",
         
         # 顔検出・ランドマーク
-        # MediaPipe 0.10.31ではsolutions APIが削除されているため、0.10.20に固定
-        "mediapipe==0.10.20",
+        # MediaPipe 0.10.30以降ではレガシーsolutions APIが削除されているため、
+        # 0.10.30未満に制限（0.10.21がsolutions APIを持つ最後のバージョン）
+        "mediapipe>=0.10.20,<0.10.30",
         
         # 自然言語処理
         "nltk>=3.8.0,<4.0.0",
