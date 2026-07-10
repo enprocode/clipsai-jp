@@ -31,6 +31,19 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install build
 
+      # GitHub ReleaseのタグとVERSIONファイルの一致を検証する
+      # （タグと実際のパッケージバージョンがズレたまま公開する事故を防ぐ）
+      - name: Verify release tag matches VERSION file
+        run: |
+          PKG_VERSION=$(tr -d '[:space:]' < VERSION)
+          TAG_NAME="${{ github.event.release.tag_name }}"
+          TAG_VERSION="${TAG_NAME#v}"  # 先頭の "v" は許容（v1.0.5 → 1.0.5）
+          echo "VERSION file: $PKG_VERSION / Release tag: $TAG_NAME"
+          if [ "$PKG_VERSION" != "$TAG_VERSION" ]; then
+            echo "Error: Release tag '$TAG_NAME' does not match VERSION file '$PKG_VERSION'"
+            exit 1
+          fi
+
       - name: Build release distributions
         run: |
           python -m build

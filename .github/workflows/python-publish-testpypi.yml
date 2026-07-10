@@ -8,7 +8,7 @@ on:
   workflow_dispatch:  # 手動実行
     inputs:
       version:
-        description: 'Package version to publish (must match setup.py, empty = auto-detect)'
+        description: 'Package version to publish (must match VERSION file, empty = auto-detect)'
         required: false
         type: string
         default: ''
@@ -45,22 +45,23 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install build twine
 
-      - name: Get version from setup.py
+      # バージョンはVERSIONファイルで一元管理（setup.pyもここから読み込む）
+      - name: Get version from VERSION file
         id: get_version
         run: |
-          SETUP_VERSION=$(python -c "import re; content = open('setup.py').read(); match = re.search(r\"version=['\\\"]([^'\\\"]+)['\\\"]\", content); print(match.group(1) if match else '')")
-          echo "version=$SETUP_VERSION" >> $GITHUB_OUTPUT
-          echo "setup.py version: $SETUP_VERSION"
+          PKG_VERSION=$(tr -d '[:space:]' < VERSION)
+          echo "version=$PKG_VERSION" >> $GITHUB_OUTPUT
+          echo "VERSION file: $PKG_VERSION"
 
       - name: Verify version (manual run only)
         if: github.event_name == 'workflow_dispatch' && github.event.inputs.version != ''
         run: |
-          SETUP_VERSION="${{ steps.get_version.outputs.version }}"
+          PKG_VERSION="${{ steps.get_version.outputs.version }}"
           INPUT_VERSION="${{ github.event.inputs.version }}"
-          echo "setup.py version: $SETUP_VERSION"
+          echo "VERSION file: $PKG_VERSION"
           echo "Input version: $INPUT_VERSION"
-          if [ "$SETUP_VERSION" != "$INPUT_VERSION" ]; then
-            echo "Error: Version mismatch! setup.py has version '$SETUP_VERSION' but input is '$INPUT_VERSION'"
+          if [ "$PKG_VERSION" != "$INPUT_VERSION" ]; then
+            echo "Error: Version mismatch! VERSION file has '$PKG_VERSION' but input is '$INPUT_VERSION'"
             exit 1
           fi
 

@@ -1,8 +1,15 @@
+import os
+
 from setuptools import find_packages, setup  # type: ignore
+
+# バージョンはVERSIONファイルで一元管理する（リリース時はVERSIONのみ更新）
+_here = os.path.abspath(os.path.dirname(__file__))
+with open(os.path.join(_here, "VERSION"), encoding="utf-8") as _f:
+    _version = _f.read().strip()
 
 setup(
     name="clipsai-jp",
-    version="1.0.4",
+    version=_version,
     description=(
         "Clips AIは、長い動画を自動的にクリップに変換するオープンソースのPythonライブラリです（日本語専用版）"
     ),
