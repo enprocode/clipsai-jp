@@ -80,13 +80,13 @@ jobs:
           echo "${{ steps.set_version.outputs.version }}" > version.txt
 
       - name: Upload distributions
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: testpypi-dists
           path: dist/
 
       - name: Upload version
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: package-version
           path: version.txt
