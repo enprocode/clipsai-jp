@@ -234,6 +234,13 @@ class Transcriber:
                     }
                 )
 
+        # char_infoの時間区間をソート済み・非重複に正規化する。
+        # Whisperの単語タイムスタンプは稀に前後で重なる/逆転することがあり、
+        # そのままだと Transcription._find_index の二分探索（区間が整列・非重複で
+        # あることを前提とする）が誤ったインデックスを返し得る。ここで一度だけ
+        # 単調性を保証しておく。
+        self._enforce_monotonic_char_info(char_info)
+
         transcription_dict = {
             "source_software": "faster-whisper",
             "time_created": datetime.now(),
@@ -242,6 +249,39 @@ class Transcriber:
             "char_info": char_info,
         }
         return Transcription(transcription_dict)
+
+    @staticmethod
+    def _enforce_monotonic_char_info(char_info: list) -> None:
+        """
+        char_infoの時間区間をソート済み・非重複になるようその場で補正する
+
+        各文字について start_time を直前の文字の end_time 以上に、end_time を
+        自身の start_time 以上にクランプする。これにより
+        `start_time <= end_time` かつ隣接区間が重ならない状態を保証する。
+
+        Parameters
+        ----------
+        char_info: list[dict]
+            文字単位の情報リスト（start_time / end_time を持つ）。その場で更新される。
+
+        Notes
+        -----
+        - この不変条件は Transcription._find_index の二分探索の前提
+        - start_time / end_time が None の要素はスキップする（前提を壊さない）
+        """
+        prev_end = None
+        for ci in char_info:
+            start = ci["start_time"]
+            end = ci["end_time"]
+            if start is None or end is None:
+                continue
+            if prev_end is not None and start < prev_end:
+                start = prev_end
+            if end < start:
+                end = start
+            ci["start_time"] = start
+            ci["end_time"] = end
+            prev_end = end
 
     def detect_language(self, media_file: AudioFile) -> str:
         """
