@@ -536,6 +536,19 @@ class Transcription:
             start_time = transcript_info[mid]["start_time"]
             end_time = transcript_info[mid]["end_time"]
 
+            # 二分探索は区間が整列・非重複で、かつ時刻が数値であることを前提とする。
+            # start_time / end_time が None だと比較で不透明な TypeError になるため、
+            # 原因の分かるエラーに変換する。
+            if start_time is None or end_time is None:
+                err = (
+                    "transcript info at index {} has a missing time "
+                    "(start_time={}, end_time={}); cannot search by time".format(
+                        mid, start_time, end_time
+                    )
+                )
+                logging.error(err)
+                raise TranscriptionError(err)
+
             if start_time <= target_time <= end_time:
                 return mid
             elif target_time > end_time:
