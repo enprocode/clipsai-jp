@@ -29,7 +29,8 @@ MECABRC=.venv/etc/mecabrc .venv/bin/python -m pytest tests/test_clip.py::test_te
 python3 -m venv .venv
 .venv/bin/pip install -r requirements.txt
 .venv/bin/pip install "mecab>=0.996.0" unidic-lite
-# pip版mecabはmecabrcを同梱しないため作成が必要:
+# pip版mecabはmecabrcを同梱しないため作成が必要（.venv/etc はvenv作成時に存在しない）:
+mkdir -p .venv/etc
 printf 'dicdir = %s\n' "$(.venv/bin/python -c 'import unidic_lite; print(unidic_lite.DICDIR)')" > .venv/etc/mecabrc
 # macOSでは brew install libmagic ffmpeg も必要（CIではapt-getで導入）
 ```
