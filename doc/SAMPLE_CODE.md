@@ -374,7 +374,9 @@ python sample/resize_video.py
 pyannoteの話者分離モデルは **gated（利用規約への同意が必要）** です。トークンの発行とモデルへの同意は**別の作業**なので、両方行ってください。
 
 1. [Hugging Face](https://huggingface.co/join) でアカウントを作成し、ログインする
-2. **アクセストークンを発行する**: [Settings → Access Tokens](https://huggingface.co/settings/tokens) を開き、「New token」で `Read` 権限のトークンを作成してコピー
+2. **アクセストークンを発行する**: [Settings → Access Tokens](https://huggingface.co/settings/tokens) を開いてトークンを作成し、コピーする。トークンタイプは2通り:
+   - **Read タイプ（簡単・推奨）**: 上部タブで `Read` を選ぶだけ。同意済みの gated モデルを含め、閲覧可能なリポジトリを一括で読めるトークンになる
+   - **Fine-grained タイプ**: `Repositories` の権限で **「Read access to contents of all public gated repos you can access」** に必ずチェックを入れる（pyannote は personal namespace 外の公開 gated モデルのため、「... under your personal namespace」だけでは**アクセスできない**）。Write・Org・Inference 系は不要
 3. **モデルの利用規約に同意する**（これを忘れると `401` / gated エラーになります）:
    - [pyannote/speaker-diarization-3.0](https://huggingface.co/pyannote/speaker-diarization-3.0) を開き、ページ上部のフォームで利用条件に同意
    - 依存モデル [pyannote/segmentation-3.0](https://huggingface.co/pyannote/segmentation-3.0) でも同様に同意
@@ -402,7 +404,7 @@ python sample/complete_example.py
    - Mac: `brew install ffmpeg`
 
 3. **Hugging Faceアクセストークン（リサイズ機能を使用する場合）**
-   - [Settings → Access Tokens](https://huggingface.co/settings/tokens) で `Read` トークンを発行
+   - [Settings → Access Tokens](https://huggingface.co/settings/tokens) で `Read` トークンを発行（Fine-grained の場合は「Read access to contents of all public gated repos you can access」にチェック）
    - pyannoteモデルは gated のため、[speaker-diarization-3.0](https://huggingface.co/pyannote/speaker-diarization-3.0) と [segmentation-3.0](https://huggingface.co/pyannote/segmentation-3.0) で利用規約に同意（詳細は上記「Hugging Faceトークンの取得方法」を参照）
 
 ## オプショナル依存関係
