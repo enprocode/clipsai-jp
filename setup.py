@@ -41,7 +41,7 @@ setup(
         # pyannote.audio 4.x は torchcodec>=0.7 を要求し、torchcodec は torch 2.9以降
         # とペアになるため、本プロジェクトの torch<2.9 制約と衝突する（import不能になる）
         # → torchcodec不要の3.x系に制限
-        "pyannote.audio>=3.3.0,<4.0.0",
+        "pyannote.audio>=3.3.0,<5.0.0",
         "pyannote.core>=5.0.0,<7.0.0",
         
         # 顔検出・ランドマーク

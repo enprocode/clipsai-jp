@@ -27,7 +27,7 @@ scenedetect>=0.6.5,<0.7.0
 
 # Speaker diarization
 # pyannote.audio 4.x は torchcodec>=0.7 を要求し、torch<2.9 制約と衝突するため3.x系に制限
-pyannote.audio>=3.3.0,<4.0.0
+pyannote.audio>=4.0.7,<5.0.0
 pyannote.core>=5.0.0,<7.0.0
 
 # Utilities
