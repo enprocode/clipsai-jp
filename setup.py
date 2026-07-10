@@ -23,7 +23,7 @@ setup(
         # torch は pyannote.audio の要件に合わせて設定
         # pyannote.audio 3.3.0+ は torch>=2.0.0 を要求
         # torchaudio 2.9.0以降ではAudioMetaDataが削除されているため、torchも2.9.0未満に制限
-        "torch>=2.0.0,<2.9.0",
+        "torch>=2.0.0,<2.14.0",
         # torchaudio は torch のバージョンと一致させる必要がある
         # torchaudio 2.9.0以降ではAudioMetaDataが削除されているため、2.8.0以下に制限
         "torchaudio>=2.0.0,<2.9.0",
