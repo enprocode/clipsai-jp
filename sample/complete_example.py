@@ -50,7 +50,7 @@ def main() -> None:
     # 設定
     video_file_path = "video.mp4"
     # リサイズ機能を使用する場合のみ必要。環境変数 HF_TOKEN から取得（推奨）。
-    # トークン発行とモデル同意の手順: doc/SAMPLE_CODE.md「Hugging Faceトークンの取得方法」
+    # トークン発行とモデル同意の手順: docs/SAMPLE_CODE.md「Hugging Faceトークンの取得方法」
     pyannote_auth_token = os.getenv("HF_TOKEN", "your_pyannote_token_here")
 
     # ファイル存在確認

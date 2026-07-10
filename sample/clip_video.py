@@ -4,7 +4,7 @@
 このサンプルでは、動画を文字起こしして、そのトランスクリプトから
 自動的にクリップを見つける方法を示します。
 
-詳細な使用方法については、doc/SAMPLE_CODE.mdを参照してください。
+詳細な使用方法については、docs/SAMPLE_CODE.mdを参照してください。
 """
 
 # 標準ライブラリ
@@ -144,7 +144,7 @@ def main() -> None:
     # )
 
     # Gemini APIを使用してクリップ検出精度を向上させる場合:
-    # 詳細な設定方法については、doc/SAMPLE_CODE.mdの「Gemini APIを使用して精度を向上させる場合」セクションを参照してください。
+    # 詳細な設定方法については、docs/SAMPLE_CODE.mdの「Gemini APIを使用して精度を向上させる場合」セクションを参照してください。
     clipfinder = ClipFinder(
         min_clip_duration=10,
         max_clip_duration=60,
