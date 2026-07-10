@@ -35,6 +35,12 @@ updates:
       # mediapipe 0.10.30以降ではレガシーsolutions API（顔検出で使用）が削除されている
       - dependency-name: "mediapipe"
         versions: [">=0.10.30"]
+      # mediapipe が numpy<2 を要求するため、numpy 2.x への更新は解決不能（#27）
+      - dependency-name: "numpy"
+        versions: [">=2.0.0"]
+      # pyannote.audio 3.x が pyannote.core<6.0 を要求するため解決不能（#26）
+      - dependency-name: "pyannote.core"
+        versions: [">=6.0.0"]
 
   # GitHub Actionsのバージョン更新
   - package-ecosystem: "github-actions"

@@ -15,7 +15,8 @@ setup(
     packages=find_packages(exclude=["tests*"]),
     install_requires=[
         # コア依存関係（最小限）
-        "numpy>=1.24.0,<2.1.0",
+        # mediapipe が numpy<2 を要求するため 2.0 未満に制限
+        "numpy>=1.24.0,<2.0.0",
         
         # 文字起こし（faster-whisperを使用）
         "faster-whisper>=1.0.0,<2.0.0",
@@ -42,7 +43,8 @@ setup(
         # とペアになるため、本プロジェクトの torch<2.9 制約と衝突する（import不能になる）
         # → torchcodec不要の3.x系に制限
         "pyannote.audio>=3.3.0,<4.0.0",
-        "pyannote.core>=5.0.0,<7.0.0",
+        # pyannote.audio 3.x は pyannote.core<6.0 を要求するため 6.0 未満に制限
+        "pyannote.core>=5.0.0,<6.0.0",
         
         # 顔検出・ランドマーク
         # MediaPipe 0.10.30以降ではレガシーsolutions APIが削除されているため、
