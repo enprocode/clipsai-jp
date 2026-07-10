@@ -20,6 +20,21 @@ updates:
         update-types:
           - "minor"
           - "patch"
+    # コード互換性のため意図的にピンしている依存関係。
+    # 理由の詳細は requirements.txt / setup.py / CLAUDE.md のコメント参照。
+    # これらの更新提案はビルド・実行を壊すため無視する。
+    ignore:
+      # torchaudio 2.9.0以降ではAudioMetaDataが削除されている
+      - dependency-name: "torch"
+        versions: [">=2.9.0"]
+      - dependency-name: "torchaudio"
+        versions: [">=2.9.0"]
+      # pyannote.audio 4.x は torchcodec>=0.7 を要求し torch<2.9 と ABI 衝突する
+      - dependency-name: "pyannote.audio"
+        versions: [">=4.0.0"]
+      # mediapipe 0.10.30以降ではレガシーsolutions API（顔検出で使用）が削除されている
+      - dependency-name: "mediapipe"
+        versions: [">=0.10.30"]
 
   # GitHub Actionsのバージョン更新
   - package-ecosystem: "github-actions"
