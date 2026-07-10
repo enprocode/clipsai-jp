@@ -126,14 +126,14 @@ jobs:
 
     steps:
       - name: Retrieve release distributions
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: testpypi-dists
           path: dist/
 
       - name: Get package version
         id: get_version
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: package-version
           path: version-info
