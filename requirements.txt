@@ -5,7 +5,7 @@
 # Core dependencies
 numpy>=1.21.0,<3.0.0
 pandas>=2.0.0,<3.0.0
-scipy>=1.9.0,<2.0.0
+scipy>=1.15.3,<2.0.0
 
 # Machine Learning
 # torchaudio 2.9.0以降ではAudioMetaDataが削除されているため、torchも2.9.0未満に制限
