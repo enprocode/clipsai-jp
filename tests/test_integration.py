@@ -93,13 +93,13 @@ class TestWorkflowComponents:
 
         # Check if MPS is actually available (only on Mac with Apple Silicon)
         if platform.system() == "Darwin":
-            # On Mac, check if MPS backend is available
+            # On Mac, check if MPS backend is available. The value itself is
+            # hardware-dependent; we only assert the support check runs and
+            # returns a boolean.
             mps_available = (
                 hasattr(torch.backends, "mps") and torch.backends.mps.is_available()
             )
-            # This is informational - MPS may or may not be available depending on hardware
-            # The important thing is that the code supports it
-            assert True  # Test passes if code supports MPS
+            assert isinstance(mps_available, bool)
 
 
 class TestComponentIntegration:

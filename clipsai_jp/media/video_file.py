@@ -21,7 +21,6 @@ from .temporal_media_file import TemporalMediaFile
 # local imports
 from clipsai_jp.utils.conversions import seconds_to_hms_time_format
 
-
 SUCCESS = 0
 
 

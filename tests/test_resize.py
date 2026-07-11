@@ -6,7 +6,6 @@ from clipsai_jp.media.video_file import VideoFile
 from clipsai_jp.resize.resizer import Resizer
 from clipsai_jp.resize.rect import Rect
 
-
 # third party imports
 import pytest
 
