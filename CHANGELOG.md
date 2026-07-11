@@ -2,6 +2,21 @@
 
 このプロジェクトの重要な変更はすべてこのファイルに記録されます。
 
+## [1.0.6] - 2026-07-11
+
+### 修正
+- `extract_frames`（リサイズ処理）で PyAV コンテナが常にクローズされずファイルディスクリプタがリークしていた問題を修正（`with` で確実にクローズ）
+- 使われていない誤ったキーの `ClipFinderConfigManager.impute_default_config`（デッドコード）を削除
+- `char_info` の時間区間を構築時にソート済み・非重複へ正規化（Whisper 由来の稀な重なりが二分探索を誤らせ得た問題への対処）
+- `Transcription._find_index` が None 時刻に対して不透明な `TypeError` ではなく明確な `TranscriptionError` を送出するよう変更
+
+### 追加
+- Gemini クリップ検出で長尺動画を全カバー（先頭150文だけでなく、文をオーバーラップ付きチャンクに分割して複数回問い合わせ、結果を統合・重複除去）
+- サンプル用の `.env.example`（`GEMINI_API_KEY` / `HF_TOKEN`）と Hugging Face トークン発行手順（gated モデル同意・Fine-grained 権限）のドキュメント
+
+### 変更
+- ドキュメントを再編: `doc/` → `docs/`、ガイドを小文字ケバブ化（`sample-code.md` / `sandbox-notebooks.md`）、`CHANGELOG.md` をリポジトリ直下へ移動
+
 ## [1.0.5] - 2026-07-10
 
 ### 追加
