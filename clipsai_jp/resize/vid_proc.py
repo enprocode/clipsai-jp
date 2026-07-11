@@ -53,25 +53,6 @@ def extract_frames(
             logging.error(err)
             raise VideoProcessingError(err)
 
-    # find all the frames to process
-    container = av.open(video_file.path)
-    stream = container.streams.video[0]
-
-    extract_times_pts = [
-        int(extract_sec / stream.time_base) for extract_sec in extract_secs
-    ]
-    frames_to_process = []
-    for extract_pts in extract_times_pts:
-        # Seek to the nearest keyframe to our desired timestamp
-        container.seek(extract_pts, stream=stream)
-        prev_frame = None
-        for frame in container.decode(stream):
-            if frame.pts > extract_pts:
-                frames_to_process.append(prev_frame or frame)
-                break
-            prev_frame = frame
-    assert len(frames_to_process) == len(extract_secs)
-
     # define function for parallel processing
     def process_frame(frame):
         # read frame
@@ -89,9 +70,41 @@ def extract_frames(
 
         return img
 
-    # process frames in parallel
-    with ThreadPoolExecutor() as executor:
-        processed_frames = list(executor.map(process_frame, frames_to_process))
+    # find all the frames to process
+    # av.open は with で囲み、例外時・正常時ともに確実にクローズする
+    # （閉じないと動画処理の繰り返しでファイルディスクリプタがリークする）
+    with av.open(video_file.path) as container:
+        stream = container.streams.video[0]
+
+        extract_times_pts = [
+            int(extract_sec / stream.time_base) for extract_sec in extract_secs
+        ]
+        frames_to_process = []
+        for extract_pts in extract_times_pts:
+            # Seek to the nearest keyframe to our desired timestamp
+            container.seek(extract_pts, stream=stream)
+            prev_frame = None
+            for frame in container.decode(stream):
+                if frame.pts > extract_pts:
+                    frames_to_process.append(prev_frame or frame)
+                    break
+                prev_frame = frame
+
+        if len(frames_to_process) != len(extract_secs):
+            err = (
+                "Could not extract a frame for every requested second "
+                "({} extracted for {} requested); requested seconds may be "
+                "too close to the end of the video".format(
+                    len(frames_to_process), len(extract_secs)
+                )
+            )
+            logging.error(err)
+            raise VideoProcessingError(err)
+
+        # process frames in parallel（フレームのデコードはコンテナが開いている
+        # 間に完了させる必要があるため with ブロック内で実行する）
+        with ThreadPoolExecutor() as executor:
+            processed_frames = list(executor.map(process_frame, frames_to_process))
 
     return processed_frames
 

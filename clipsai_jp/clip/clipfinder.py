@@ -694,35 +694,11 @@ class ClipFinderConfigManager(TextTilerConfigManager):
         """
         super().__init__()
 
-    def impute_default_config(self, config: dict) -> dict:
-        """
-        Populates input data with default values if they are not provided.
-
-        Parameters
-        ----------
-        config: dict
-            The input data to be imputed.
-
-        Returns
-        -------
-        dict
-            The imputed input data.
-        """
-        default_values = {
-            "compute_device": "cpu",
-            "cutoff_policy": "high",
-            "embedding_aggregation_pool_method": "max",
-            "min_clip_time": 15,
-            "max_clip_time": 900,
-            "smoothing_width": 3,
-            "window_compare_pool_method": "mean",
-        }
-
-        for key in default_values.keys():
-            if key not in config:
-                config[key] = default_values[key]
-
-        return config
+    # 注: 以前ここに impute_default_config のオーバーライドがあったが、
+    # check_valid_config が使うキー（min_clip_duration/max_clip_duration）と
+    # 異なるキー（min_clip_time/max_clip_time）を埋めており、かつどこからも
+    # 呼ばれていなかった（デッドコード）ため削除した。デフォルト補完が必要に
+    # なった場合は正しいキーで実装すること。基底クラスの no-op 実装を継承する。
 
     def check_valid_config(
         self,
