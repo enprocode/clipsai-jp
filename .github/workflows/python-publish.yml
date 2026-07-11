@@ -34,11 +34,16 @@ jobs:
   # 自動リリース経路では、未公開なら GitHub Release をここで作成する。
   prepare:
     runs-on: ubuntu-latest
-    # 手動リリース、または Tests 成功時のみ実行
+    # 手動リリース、または「baseリポジトリの main への push」で Tests が成功した時のみ実行。
+    # Tests は pull_request でも走るため、workflow_run.event == 'push' を必須にして
+    # 未マージPRのコード/VERSIONで公開されるのを防ぐ（fork からのPRも head_repository で除外）。
     if: >
       github.event_name == 'release' ||
       (github.event_name == 'workflow_run' &&
-       github.event.workflow_run.conclusion == 'success')
+       github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.event == 'push' &&
+       github.event.workflow_run.head_branch == 'main' &&
+       github.event.workflow_run.head_repository.full_name == github.repository)
     permissions:
       contents: write  # 自動リリース経路でタグ/Releaseを作成するために必要
     outputs:
