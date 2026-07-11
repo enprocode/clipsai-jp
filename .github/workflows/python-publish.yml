@@ -1,22 +1,91 @@
-# This workflow will upload a Python Package to PyPI when a release is created
-# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-python#publishing-to-package-registries
-
-# This workflow uses actions that are not certified by GitHub.
-# They are provided by a third-party and are governed by
-# separate terms of service, privacy policy, and support
-# documentation.
+# 本番PyPIへの公開ワークフロー
+#
+# 2つの経路で発火する:
+#   1. GitHub Release を手動作成した時（release: published）
+#   2. main で Tests が成功し、VERSION が未リリースの時（自動リリース）
+#      → GitHub Release を自動作成してから公開する
+#
+# 注: PyPI の Trusted Publishing はこのワークフローファイル名に紐づいているため、
+#     公開処理は必ずこのファイル内で行うこと（別ファイルからは公開できない）。
 
 name: Upload Python Package
 
 on:
   release:
     types: [published]
+  workflow_run:
+    workflows: ["Tests"]
+    types:
+      - completed
+    branches:
+      - main
 
 permissions:
   contents: read
 
 jobs:
+  # バージョンを決定し、公開すべきか（未リリースか）を判定する。
+  # 自動リリース経路では、未リリースなら GitHub Release をここで作成する。
+  prepare:
+    runs-on: ubuntu-latest
+    # 手動リリース、または Tests 成功時のみ実行
+    if: >
+      github.event_name == 'release' ||
+      (github.event_name == 'workflow_run' &&
+       github.event.workflow_run.conclusion == 'success')
+    permissions:
+      contents: write  # 自動リリース経路でタグ/Releaseを作成するために必要
+    outputs:
+      proceed: ${{ steps.decide.outputs.proceed }}
+      version: ${{ steps.decide.outputs.version }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Decide version and whether to release
+        id: decide
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -e
+          VERSION=$(tr -d '[:space:]' < VERSION)
+          TAG="v$VERSION"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "VERSION file: $VERSION"
+
+          if [ "${{ github.event_name }}" = "release" ]; then
+            # 手動リリース: タグと VERSION の一致を検証してから公開
+            REL_TAG="${{ github.event.release.tag_name }}"
+            if [ "${REL_TAG#v}" != "$VERSION" ]; then
+              echo "Error: release tag '$REL_TAG' does not match VERSION '$VERSION'"
+              exit 1
+            fi
+            echo "proceed=true" >> "$GITHUB_OUTPUT"
+          else
+            # 自動リリース: 同じバージョンの Release が無ければ作成する（冪等）
+            if gh release view "$TAG" >/dev/null 2>&1; then
+              echo "Release $TAG already exists - skipping publish."
+              echo "proceed=false" >> "$GITHUB_OUTPUT"
+            else
+              # CHANGELOG.md から該当バージョンのセクションをリリースノートに使う
+              NOTES=$(awk -v v="$VERSION" '
+                $0 ~ "^## \\[" v "\\]" {f=1; next}
+                /^## \[/ {f=0}
+                f {print}
+              ' CHANGELOG.md)
+              if [ -z "$NOTES" ]; then
+                NOTES="Release $TAG"
+              fi
+              gh release create "$TAG" --title "$TAG" --target main --notes "$NOTES"
+              echo "Created release $TAG"
+              echo "proceed=true" >> "$GITHUB_OUTPUT"
+            fi
+          fi
+
   release-build:
+    needs: prepare
+    if: needs.prepare.outputs.proceed == 'true'
     runs-on: ubuntu-latest
 
     steps:
@@ -31,19 +100,6 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install build
 
-      # GitHub ReleaseのタグとVERSIONファイルの一致を検証する
-      # （タグと実際のパッケージバージョンがズレたまま公開する事故を防ぐ）
-      - name: Verify release tag matches VERSION file
-        run: |
-          PKG_VERSION=$(tr -d '[:space:]' < VERSION)
-          TAG_NAME="${{ github.event.release.tag_name }}"
-          TAG_VERSION="${TAG_NAME#v}"  # 先頭の "v" は許容（v1.0.5 → 1.0.5）
-          echo "VERSION file: $PKG_VERSION / Release tag: $TAG_NAME"
-          if [ "$PKG_VERSION" != "$TAG_VERSION" ]; then
-            echo "Error: Release tag '$TAG_NAME' does not match VERSION file '$PKG_VERSION'"
-            exit 1
-          fi
-
       - name: Build release distributions
         run: |
           python -m build
@@ -57,18 +113,18 @@ jobs:
   pypi-publish:
     runs-on: ubuntu-latest
     needs:
+      - prepare
       - release-build
+    if: needs.prepare.outputs.proceed == 'true'
     permissions:
       # IMPORTANT: this permission is mandatory for trusted publishing
       id-token: write
 
     # Dedicated environments with protections for publishing are strongly recommended.
-    # For more information, see: https://docs.github.com/en/actions/deployment/targeting-different-environments/using-environments-for-deployment#deployment-protection-rules
+    # pypi 環境に「required reviewers」を設定すると、公開前に手動承認を挟める。
     environment:
       name: pypi
-      # PyPI project URL in the deployment status
-      # GitHub Release name should match the PyPI package version (e.g., "1.0.0")
-      url: https://pypi.org/project/clipsai-jp/${{ github.event.release.name }}
+      url: https://pypi.org/project/clipsai-jp/${{ needs.prepare.outputs.version }}
 
     steps:
       - name: Retrieve release distributions
@@ -81,3 +137,5 @@ jobs:
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           packages-dir: dist/
+          # 既に同じバージョンが公開済みでも失敗させない（冪等性）
+          skip-existing: true
