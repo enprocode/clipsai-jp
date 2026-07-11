@@ -23,7 +23,6 @@ from clipsai_jp.filesys.manager import FileSystemManager
 from clipsai_jp.utils.conversions import seconds_to_hms_time_format
 from clipsai_jp.utils.type_checker import TypeChecker
 
-
 # ffmpeg return code of 0 means success; any other (positive) integer means failure
 SUCCESS = 0
 

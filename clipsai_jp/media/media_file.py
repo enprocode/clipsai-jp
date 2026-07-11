@@ -14,7 +14,6 @@ from .exceptions import NoAudioStreamError, NoVideoStreamError
 from clipsai_jp.filesys.file import File
 from clipsai_jp.filesys.manager import FileSystemManager
 
-
 SUCCESS = 0
 FALSE = 0
 
