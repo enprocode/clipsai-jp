@@ -61,7 +61,7 @@ def main() -> None:
     # Hugging FaceのPyannoteアクセストークン
     # 環境変数 HF_TOKEN から取得（推奨。sample/.env.example を参照）。
     # 未設定の場合は下のダミー値を直接書き換えてもよい。
-    # トークン発行とモデル同意の手順: doc/SAMPLE_CODE.md「Hugging Faceトークンの取得方法」
+    # トークン発行とモデル同意の手順: docs/sample-code.md「Hugging Faceトークンの取得方法」
     pyannote_auth_token = os.getenv("HF_TOKEN", "your_pyannote_token_here")
 
     # 出力ディレクトリ（必要に応じて変更してください）

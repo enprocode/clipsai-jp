@@ -249,7 +249,7 @@ pip install -e .[dev]
 
 ## 関連ドキュメント
 
-- [サンプルコード](./SAMPLE_CODE.md): 実用的なサンプルコードの使用方法
+- [サンプルコード](./sample-code.md): 実用的なサンプルコードの使用方法
 - [README](../README.md): プロジェクトの概要とインストール方法
-- [CHANGELOG](./CHANGELOG.md): 変更履歴
+- [CHANGELOG](../CHANGELOG.md): 変更履歴
 
