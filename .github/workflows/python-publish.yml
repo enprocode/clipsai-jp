@@ -2,11 +2,17 @@
 #
 # 2つの経路で発火する:
 #   1. GitHub Release を手動作成した時（release: published）
-#   2. main で Tests が成功し、VERSION が未リリースの時（自動リリース）
-#      → GitHub Release を自動作成してから公開する
+#   2. main で Tests が成功した時（自動リリース）
+#      → VERSION が未公開なら GitHub Release を自動作成してから公開する
 #
-# 注: PyPI の Trusted Publishing はこのワークフローファイル名に紐づいているため、
-#     公開処理は必ずこのファイル内で行うこと（別ファイルからは公開できない）。
+# 注1: PyPI の Trusted Publishing はこのワークフローファイル名に紐づいているため、
+#      公開処理は必ずこのファイル内で行うこと（別ファイルからは公開できない）。
+# 注2: 自動リリース経路では、Tests が成功した「まさにそのコミット」
+#      (workflow_run.head_sha) をチェックアウト・タグ付けの対象にする。
+#      main の HEAD を使うと、リリース処理中に別PRがマージされた場合に
+#      テストされていないコミット/バージョンを公開してしまうため。
+# 注3: 公開済みかどうかは GitHub Release の有無ではなく PyPI 上の存在で判定する。
+#      Release 作成後に publish が失敗しても、次回以降に再公開を試みられるようにする。
 
 name: Upload Python Package
 
@@ -24,49 +30,76 @@ permissions:
   contents: read
 
 jobs:
-  # バージョンを決定し、公開すべきか（未リリースか）を判定する。
-  # 自動リリース経路では、未リリースなら GitHub Release をここで作成する。
+  # バージョンを決定し、公開すべきか（PyPI に未公開か）を判定する。
+  # 自動リリース経路では、未公開なら GitHub Release をここで作成する。
   prepare:
     runs-on: ubuntu-latest
-    # 手動リリース、または Tests 成功時のみ実行
+    # 手動リリース、または「baseリポジトリの main への push」で Tests が成功した時のみ実行。
+    # Tests は pull_request でも走るため、workflow_run.event == 'push' を必須にして
+    # 未マージPRのコード/VERSIONで公開されるのを防ぐ（fork からのPRも head_repository で除外）。
     if: >
       github.event_name == 'release' ||
       (github.event_name == 'workflow_run' &&
-       github.event.workflow_run.conclusion == 'success')
+       github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.event == 'push' &&
+       github.event.workflow_run.head_branch == 'main' &&
+       github.event.workflow_run.head_repository.full_name == github.repository)
     permissions:
       contents: write  # 自動リリース経路でタグ/Releaseを作成するために必要
     outputs:
       proceed: ${{ steps.decide.outputs.proceed }}
       version: ${{ steps.decide.outputs.version }}
+      ref: ${{ steps.target.outputs.ref }}
     steps:
+      # 公開対象のコミット/参照を確定する。
+      # 自動経路はテスト済みコミット、手動経路は Release のタグ。
+      - name: Resolve target ref
+        id: target
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_run" ]; then
+            echo "ref=${{ github.event.workflow_run.head_sha }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "ref=${{ github.event.release.tag_name }}" >> "$GITHUB_OUTPUT"
+          fi
+
       - uses: actions/checkout@v7
         with:
+          ref: ${{ steps.target.outputs.ref }}
           fetch-depth: 0
 
-      - name: Decide version and whether to release
+      - name: Decide version and whether to publish
         id: decide
         env:
           GH_TOKEN: ${{ github.token }}
+          TARGET_REF: ${{ steps.target.outputs.ref }}
         run: |
           set -e
           VERSION=$(tr -d '[:space:]' < VERSION)
           TAG="v$VERSION"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
-          echo "VERSION file: $VERSION"
+          echo "VERSION file: $VERSION (target: $TARGET_REF)"
+
+          # 既に PyPI に公開済みなら何もしない（Release の有無ではなく実体で判定）
+          PYPI_STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+            "https://pypi.org/pypi/clipsai-jp/$VERSION/json")
+          if [ "$PYPI_STATUS" = "200" ]; then
+            echo "clipsai-jp $VERSION is already on PyPI - nothing to do."
+            echo "proceed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "clipsai-jp $VERSION not on PyPI (HTTP $PYPI_STATUS) - will publish."
 
           if [ "${{ github.event_name }}" = "release" ]; then
-            # 手動リリース: タグと VERSION の一致を検証してから公開
+            # 手動リリース: タグと VERSION の一致を検証
             REL_TAG="${{ github.event.release.tag_name }}"
             if [ "${REL_TAG#v}" != "$VERSION" ]; then
               echo "Error: release tag '$REL_TAG' does not match VERSION '$VERSION'"
               exit 1
             fi
-            echo "proceed=true" >> "$GITHUB_OUTPUT"
           else
-            # 自動リリース: 同じバージョンの Release が無ければ作成する（冪等）
+            # 自動リリース: 未作成なら Release をテスト済みコミットに作成する（冪等）
             if gh release view "$TAG" >/dev/null 2>&1; then
-              echo "Release $TAG already exists - skipping publish."
-              echo "proceed=false" >> "$GITHUB_OUTPUT"
+              echo "Release $TAG already exists - will (re)publish to PyPI."
             else
               # CHANGELOG.md から該当バージョンのセクションをリリースノートに使う
               NOTES=$(awk -v v="$VERSION" '
@@ -77,11 +110,12 @@ jobs:
               if [ -z "$NOTES" ]; then
                 NOTES="Release $TAG"
               fi
-              gh release create "$TAG" --title "$TAG" --target main --notes "$NOTES"
-              echo "Created release $TAG"
-              echo "proceed=true" >> "$GITHUB_OUTPUT"
+              gh release create "$TAG" --title "$TAG" \
+                --target "$TARGET_REF" --notes "$NOTES"
+              echo "Created release $TAG at $TARGET_REF"
             fi
           fi
+          echo "proceed=true" >> "$GITHUB_OUTPUT"
 
   release-build:
     needs: prepare
@@ -89,7 +123,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # prepare と同じ（テスト済み）コミットをビルドする
       - uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.prepare.outputs.ref }}
 
       - uses: actions/setup-python@v6
         with:
