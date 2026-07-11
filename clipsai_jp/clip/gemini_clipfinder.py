@@ -19,6 +19,17 @@ except ImportError:
 
 logger = logging.getLogger(__name__)
 
+# 1回のGeminiリクエストに含める文の最大数。長尺動画では文数が数百〜数千に
+# なるため、これを超える場合はチャンクに分割して複数回問い合わせる
+# （分割しないと後半の文が一切Geminiに渡らず、後半のクリップ提案が出ない）。
+SENTENCES_PER_CHUNK = 150
+# チャンク境界をまたぐトピックの取りこぼしを防ぐための重複文数
+CHUNK_OVERLAP = 15
+# プロンプトに含める1文あたりの最大文字数
+SENTENCE_CHAR_LIMIT = 200
+# プロンプトの【文字起こしテキスト】ブロックの最大文字数
+TEXT_PREVIEW_CHAR_LIMIT = 4000
+
 
 class GeminiClipFinder:
     """
@@ -97,7 +108,8 @@ class GeminiClipFinder:
         Parameters
         ----------
         transcription_text: str
-            文字起こしテキスト（最初の4000文字程度を使用）
+            文字起こしテキスト全体（現在はチャンクごとに文から再構築するため未使用。
+            後方互換のため引数として残している）
         sentences: List[Dict]
             センテンス情報のリスト（start_time, end_time, sentence含む）
         min_clip_duration: int
@@ -110,22 +122,107 @@ class GeminiClipFinder:
         List[Dict]
             クリップ境界の提案リスト（start_time, end_time, topic含む）
             エラー時は空リストを返す
-        """
-        # テキストを適切な長さに切り詰め（Geminiの入力制限を考慮）
-        text_preview = transcription_text[:4000]
 
-        # センテンス情報から時間情報を抽出（インデックスも含める）
+        Notes
+        -----
+        - 文数が SENTENCES_PER_CHUNK を超える場合はチャンクに分割して複数回
+          問い合わせ、結果を統合する（長尺動画でも全体をカバーするため）
+        """
+        if not sentences:
+            return []
+
+        all_boundaries: List[Dict] = []
+        # 文をチャンクに分割して順に問い合わせる。CHUNK_OVERLAP 分だけ重複させ、
+        # チャンク境界をまたぐトピックの取りこぼしを防ぐ。
+        step = max(1, SENTENCES_PER_CHUNK - CHUNK_OVERLAP)
+        for chunk_start in range(0, len(sentences), step):
+            chunk = sentences[chunk_start : chunk_start + SENTENCES_PER_CHUNK]
+            if not chunk:
+                break
+
+            boundaries = self._suggest_for_chunk(
+                chunk, chunk_start, min_clip_duration, max_clip_duration
+            )
+            all_boundaries.extend(boundaries)
+
+            # 最後のチャンク（末尾まで到達）ならループを抜ける
+            if chunk_start + SENTENCES_PER_CHUNK >= len(sentences):
+                break
+
+        # チャンク重複により生じた重複提案を除去
+        merged = self._dedupe_boundaries(all_boundaries)
+        logger.info(
+            f"Gemini suggested {len(merged)} clip boundaries "
+            f"(from {len(sentences)} sentences)"
+        )
+        return merged
+
+    def _suggest_for_chunk(
+        self,
+        chunk_sentences: List[Dict],
+        index_offset: int,
+        min_clip_duration: int,
+        max_clip_duration: int,
+    ) -> List[Dict]:
+        """
+        1チャンク分の文に対してGeminiにクリップ境界を問い合わせる
+
+        Parameters
+        ----------
+        chunk_sentences: List[Dict]
+            このチャンクの文情報リスト
+        index_offset: int
+            チャンク先頭の全体における文インデックス（プロンプトの index を
+            全体で一貫させるために加算する）
+        min_clip_duration: int
+            最小クリップ長（秒）
+        max_clip_duration: int
+            最大クリップ長（秒）
+
+        Returns
+        -------
+        List[Dict]
+            クリップ境界の提案リスト。エラー時は空リスト
+        """
+        # センテンス情報から時間情報を抽出（インデックスは全体で一貫させる）
         sentences_summary = [
             {
-                "index": i,
+                "index": index_offset + i,
                 "start_time": s.get("start_time", 0),
                 "end_time": s.get("end_time", 0),
-                "sentence": s.get("sentence", "")[:200],  # より長い文を保持
+                "sentence": s.get("sentence", "")[:SENTENCE_CHAR_LIMIT],
             }
-            for i, s in enumerate(sentences[:150])  # より多くの文を考慮
+            for i, s in enumerate(chunk_sentences)
         ]
 
-        prompt = f"""あなたは動画編集の専門家です。以下の動画の文字起こしテキストを分析して、自然なトピック境界を見つけてください。
+        # このチャンクの文からテキストプレビューを構築（長さは上限で制限）
+        text_preview = "".join(s.get("sentence", "") for s in chunk_sentences)[
+            :TEXT_PREVIEW_CHAR_LIMIT
+        ]
+
+        prompt = self._build_prompt(
+            text_preview, sentences_summary, min_clip_duration, max_clip_duration
+        )
+
+        try:
+            response = self.client.models.generate_content(
+                model=self.model_name,
+                contents=prompt,
+            )
+            return self._parse_json_response(response.text)
+        except Exception as e:
+            logger.error(f"Gemini API error: {e}")
+            return []
+
+    @staticmethod
+    def _build_prompt(
+        text_preview: str,
+        sentences_summary: List[Dict],
+        min_clip_duration: int,
+        max_clip_duration: int,
+    ) -> str:
+        """クリップ境界検出のプロンプト文字列を組み立てる"""
+        return f"""あなたは動画編集の専門家です。以下の動画の文字起こしテキストを分析して、自然なトピック境界を見つけてください。
 
 【文字起こしテキスト】
 {text_preview}
@@ -163,22 +260,35 @@ JSON配列形式で返答してください:
 文のインデックス（index）を参考にして、文の境界で分割してください。
 """
 
-        try:
-            response = self.client.models.generate_content(
-                model=self.model_name,
-                contents=prompt,
+    @staticmethod
+    def _dedupe_boundaries(boundaries: List[Dict]) -> List[Dict]:
+        """
+        チャンクの重複により生じた重複する境界提案を除去する
+
+        start_time / end_time がともに2秒以内で近い提案は同一とみなす。
+
+        Parameters
+        ----------
+        boundaries: List[Dict]
+            全チャンクから集めた境界提案
+
+        Returns
+        -------
+        List[Dict]
+            重複を除いた境界提案（start_time 昇順）
+        """
+        unique: List[Dict] = []
+        for b in sorted(boundaries, key=lambda x: x.get("start_time", 0)):
+            bs = b.get("start_time", 0)
+            be = b.get("end_time", 0)
+            is_dup = any(
+                abs(bs - u.get("start_time", 0)) < 2
+                and abs(be - u.get("end_time", 0)) < 2
+                for u in unique
             )
-
-            # レスポンステキストからJSONを抽出
-            response_text = response.text
-            boundaries = self._parse_json_response(response_text)
-
-            logger.info(f"Gemini suggested {len(boundaries)} clip boundaries")
-            return boundaries
-
-        except Exception as e:
-            logger.error(f"Gemini API error: {e}")
-            return []
+            if not is_dup:
+                unique.append(b)
+        return unique
 
     def _parse_json_response(self, text: str) -> List[Dict]:
         """
