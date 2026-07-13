@@ -101,7 +101,7 @@ setup(
             "build",
             "flake8",
             "ipykernel",
-            "pytest>=7.0.0,<9.0.0",
+            "pytest>=7.0.0,<10.0.0",
             "pandas>=2.0.0,<3.0.0",  # テスト用
             "matplotlib>=3.8.0,<4.0.0",  # 開発用
             "twine",
