@@ -24,7 +24,7 @@ opencv-python>=4.5.0,<5.0.0
 # mediapipe 0.10.30以降ではレガシーsolutions API（face_detection等）が削除されているため、
 # 0.10.30未満に制限（0.10.21がsolutions APIを持つ最後のバージョン）
 mediapipe>=0.10.21,<0.10.30
-scenedetect>=0.6.5,<0.7.0
+scenedetect>=0.7,<0.8.0
 
 # Speaker diarization
 # pyannote.audio 4.x は torchcodec>=0.7 を要求し、torch<2.9 制約と衝突するため3.x系に制限
