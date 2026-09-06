@@ -48,18 +48,19 @@ class ClipFinder:
         smoothing_width: int = 3,
         window_compare_pool_method: str = "mean",
         embedding_model: str = "japanese",
-        use_llm: bool = False,
-        llm_provider: str = "openai",
-        llm_api_key: str = None,
-        llm_model: str = None,
-        llm_base_url: str = None,
-        llm_priority: float = 0.5,
         use_gemini: bool = False,
         gemini_api_key: str = None,
         gemini_model: str = "gemini-2.5-flash",
         gemini_priority: float = 0.5,
         clip_style: str = "auto",
         max_clips: int = None,
+        *,
+        use_llm: bool = False,
+        llm_provider: str = "openai",
+        llm_api_key: str = None,
+        llm_model: str = None,
+        llm_base_url: str = None,
+        llm_priority: float = 0.5,
     ) -> None:
         """
         Parameters
@@ -90,19 +91,6 @@ class ClipFinder:
             ``japanese`` (multilingual MPNet). Shortcuts: 'japanese',
             'high_accuracy', 'large', 'default' (英語特化). Full model names
             are also accepted. See TextEmbedder.RECOMMENDED_MODELS.
-        use_llm: bool
-            LLM APIでクリップ境界を補助するかどうか（デフォルト: False）
-        llm_provider: str
-            LLMプロバイダ。``openai`` / ``anthropic`` / ``gemini`` /
-            ``openai_compatible``（Ollama、Groq などの互換API）
-        llm_api_key: str or None
-            LLM APIキー。None の場合はプロバイダごとの環境変数から取得
-        llm_model: str or None
-            使用するモデル名。None ならプロバイダのデフォルト
-        llm_base_url: str or None
-            APIのベースURL。``openai_compatible`` では必須
-        llm_priority: float
-            LLM提案の重み（0.0=TextTilingのみ, 1.0=LLMのみ、デフォルト: 0.5）
         use_gemini: bool
             非推奨。``use_llm=True, llm_provider="gemini"`` と同等
         gemini_api_key: str or None
@@ -117,6 +105,21 @@ class ClipFinder:
         max_clips: int or None
             ショート向け処理で返す最大クリップ数。None なら 8 件。
             ``0`` を指定すると重複抑制後の全件を返す。
+        use_llm: bool
+            LLM APIでクリップ境界を補助するかどうか（デフォルト: False）。
+            以降の ``llm_*`` とともにキーワード専用引数。
+        llm_provider: str
+            LLMプロバイダ。``openai`` / ``anthropic`` / ``gemini`` /
+            ``openai_compatible``（Ollama、Groq などの互換API）
+        llm_api_key: str or None
+            LLM APIキー。None の場合はプロバイダごとの環境変数から取得
+        llm_model: str or None
+            使用するモデル名。None ならプロバイダのデフォルト
+        llm_base_url: str or None
+            APIのベースURL。``openai_compatible`` では必須
+        llm_priority: float
+            LLM提案の重み（0.0=TextTilingのみ, 1.0=LLMのみ、デフォルト: 0.5）。
+            0.0 のときは API を呼ばない。
         """
         # configuration check
         config_manager = ClipFinderConfigManager()
@@ -169,7 +172,7 @@ class ClipFinder:
         self._llm_finder = None
         self._use_llm = False
         self._llm_priority = llm_config["priority"]
-        if llm_config["enabled"]:
+        if llm_config["enabled"] and llm_config["priority"] > 0:
             try:
                 self._llm_finder = LlmClipFinder(
                     provider=llm_config["provider"],
@@ -283,8 +286,8 @@ class ClipFinder:
                     clips,
                 )
 
-        # LLMを使用する場合
-        if self._use_llm:
+        # LLMを使用する場合（priority=0 は TextTiling のみなので API を呼ばない）
+        if self._use_llm and self._llm_priority > 0:
             try:
                 llm_boundaries = self._llm_finder.suggest_clip_boundaries(
                     transcription.text,

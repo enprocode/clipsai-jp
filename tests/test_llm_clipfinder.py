@@ -251,6 +251,75 @@ def test_clipfinder_use_gemini_maps_to_gemini_provider():
     assert created["model"] == "gemini-2.5-pro"
 
 
+def test_clipfinder_legacy_positional_args_still_map_to_use_gemini():
+    """embedding_model の次の位置引数は use_gemini のまま（後方互換）。"""
+    from clipsai_jp.clip.clipfinder import ClipFinder
+
+    created = {}
+
+    class _FakeLlm:
+        def __init__(self, **kwargs):
+            created.update(kwargs)
+            self.provider = kwargs["provider"]
+            self.model_name = kwargs.get("model") or "fake"
+
+    with patch("clipsai_jp.clip.clipfinder.LlmClipFinder", _FakeLlm):
+        with pytest.warns(DeprecationWarning, match="use_gemini"):
+            finder = ClipFinder(
+                "cpu",
+                15,
+                900,
+                "high",
+                "max",
+                3,
+                "mean",
+                "japanese",
+                True,
+                "gem-test",
+            )
+
+    assert finder._use_llm is True
+    assert created["provider"] == "gemini"
+    assert created["api_key"] == "gem-test"
+
+
+def test_clipfinder_new_llm_args_are_keyword_only():
+    import inspect
+
+    from clipsai_jp.clip.clipfinder import ClipFinder
+
+    params = inspect.signature(ClipFinder.__init__).parameters
+    names = list(params)
+    assert names.index("use_gemini") < names.index("use_llm")
+    assert names.index("clip_style") < names.index("use_llm")
+    assert names.index("max_clips") < names.index("use_llm")
+    assert params["use_llm"].kind is inspect.Parameter.KEYWORD_ONLY
+    assert params["llm_priority"].kind is inspect.Parameter.KEYWORD_ONLY
+
+
+def test_llm_priority_zero_skips_llm_init():
+    from clipsai_jp.clip.clipfinder import ClipFinder
+
+    class _FakeLlm:
+        def __init__(self, **kwargs):
+            raise AssertionError("LlmClipFinder should not be constructed")
+
+        def suggest_clip_boundaries(self, *a, **k):
+            raise AssertionError("LLM API should not be called")
+
+    with patch("clipsai_jp.clip.clipfinder.LlmClipFinder", _FakeLlm):
+        finder = ClipFinder(
+            device="cpu",
+            use_llm=True,
+            llm_api_key="sk-test",
+            llm_priority=0.0,
+        )
+
+    assert finder._use_llm is False
+    assert finder._llm_finder is None
+    assert finder._llm_priority == 0.0
+
+
 def test_gemini_clipfinder_wrapper_is_llm_subclass():
     from clipsai_jp.clip.gemini_clipfinder import GeminiClipFinder
 
