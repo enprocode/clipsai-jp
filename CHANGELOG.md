@@ -4,6 +4,8 @@
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-09-06
+
 ### 追加
 - クリップ検出の LLM 補助を Gemini 専用から複数プロバイダ対応に変更
   - `ClipFinder(use_llm=True, llm_provider="openai"|"anthropic"|"gemini"|"openai_compatible")`
