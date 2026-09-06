@@ -267,11 +267,7 @@ clipfinder = ClipFinder(
 **LLM パラメータ:**
 - `use_llm` (デフォルト: False): LLM でクリップ境界を補助するかどうか
 - `llm_provider`: `"openai"` / `"anthropic"` / `"gemini"` / `"openai_compatible"`
-- `llm_api_key` (デフォルト: None): APIキー。未指定時は環境変数から取得
-  - OpenAI: `OPENAI_API_KEY`
-  - Anthropic: `ANTHROPIC_API_KEY`
-  - Gemini: `GEMINI_API_KEY`
-  - 共通フォールバック: `LLM_API_KEY`（Ollama などローカルなら不要）
+- `llm_api_key` (デフォルト: None): APIキー。未指定時は環境変数から取得（後述）
 - `llm_model`: モデル名。未指定時のデフォルトは
   - openai: `gpt-4o-mini`
   - anthropic: `claude-sonnet-4-5`
@@ -293,9 +289,25 @@ clipfinder = ClipFinder(
 5. **`llm_priority` を 0.6〜0.8 にする**: TextTiling の安定性と LLM の意味理解を混ぜる
 6. **ショートなら `clip_style="shorts"`**（または `max_clip_duration<=90`）: フック評価と重複抑制が乗る
 
-**APIキーの設定方法:**
+**APIキーの扱い:**
 
-【方法1】.envファイルを使用（推奨）
+ライブラリはキーをハードコードしません。取得順は次のとおりです。
+
+1. 引数 `llm_api_key=...`（または旧APIの `gemini_api_key`）
+2. プロバイダ専用の環境変数
+3. 共通フォールバック `LLM_API_KEY`
+4. それでも無い場合: `ClipFinder` は警告を出して LLM をオフにし、TextTiling のみで動作する
+
+| プロバイダ | 環境変数 | HTTP への載せ方 |
+|---|---|---|
+| OpenAI | `OPENAI_API_KEY` | `Authorization: Bearer ...` |
+| Anthropic | `ANTHROPIC_API_KEY` | `x-api-key` |
+| Gemini | `GEMINI_API_KEY` | `x-goog-api-key` |
+| OpenAI互換（Ollama 等） | `LLM_API_KEY`（任意） | キーがあれば Bearer。ローカルならキーなしで可 |
+
+`clipsai_jp` 本体は `.env` を読み込みません。環境変数をセットするか、サンプルのように `python-dotenv` で読み込んでください。ログにはプロバイダ名とモデル名だけ出し、キーは出しません。API 呼び出しに失敗した場合も TextTiling にフォールバックします。
+
+【方法1】.envファイルを使用（サンプル向け・推奨）
 
 `.env`ファイルを使用することで、APIキーをコードから分離して管理できます。
 
@@ -305,7 +317,7 @@ clipfinder = ClipFinder(
 cp sample/.env.example sample/.env
 ```
 
-2. `sample/.env` を開き、使うプロバイダのキーだけ書き換える:
+2. `sample/.env` を開き、**使うプロバイダのキーだけ**書き換える:
 
 ```bash
 # .env
@@ -320,7 +332,7 @@ HF_TOKEN=your_actual_huggingface_token_here
 pip install python-dotenv
 ```
 
-4. サンプルコードでは、`.env`ファイルから自動的に環境変数を読み込みます:
+4. `sample/clip_video.py` などは `.env` を自動読み込みします:
 
 ```python
 # .envファイルから環境変数を読み込む（オプション）
@@ -333,13 +345,14 @@ except ImportError:
     pass
 ```
 
-**注意:** `.env`ファイルは`.gitignore`に含まれているため、リポジトリにコミットされません。セキュリティのため、実際のAPIキーをコードに直接記述しないでください。
+**注意:** `.env`ファイルは`.gitignore`に含まれているため、リポジトリにコミットされません。実際のAPIキーをコードに直接記述しないでください。
 
 【方法2】環境変数として直接設定
 
 **Linux/Mac:**
 ```bash
 export OPENAI_API_KEY="your_api_key_here"
+# または: ANTHROPIC_API_KEY / GEMINI_API_KEY
 ```
 
 **Windows PowerShell:**
@@ -347,8 +360,24 @@ export OPENAI_API_KEY="your_api_key_here"
 $env:OPENAI_API_KEY="your_api_key_here"
 ```
 
+**Windows コマンドプロンプト:**
+```cmd
+set OPENAI_API_KEY=your_api_key_here
+```
+
+【方法3】引数で渡す（非推奨。ソースやログに残りやすい）
+
+```python
+clipfinder = ClipFinder(
+    use_llm=True,
+    llm_provider="openai",
+    llm_api_key=os.environ["OPENAI_API_KEY"],
+)
+```
+
 **注意:**
-- LLM 補助はオプショナルです。APIキーが無い、または API 呼び出しに失敗した場合でも TextTiling のみで動作します。
+- LLM 補助はオプショナルです（`use_llm` のデフォルトは False）。キーが無い、または API 呼び出しに失敗した場合でも TextTiling のみで動作します。
+- `sample/clip_video.py` はデモとして `use_llm=True, llm_provider="openai"` になっているため、動かすには `OPENAI_API_KEY` が必要です（未設定なら TextTiling のみ）。
 - MeCabもオプショナル機能です。MeCabがインストールされていない場合、自動的にNLTKにフォールバックします。ただし、MeCabをインストールすることで、日本語の文分割精度が向上し、より自然な動画分割が可能になります。
 
 **MeCabによる日本語文分割（自動使用）:**

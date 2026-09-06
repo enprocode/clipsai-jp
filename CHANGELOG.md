@@ -13,6 +13,7 @@
 ### 変更
 - `google-genai` を必須依存から削除
 - `use_gemini` / `gemini_*` / `GeminiClipFinder` は非推奨の互換エイリアスとして残す
+- README / `docs/sample-code.md` に LLM プロバイダと API キーの取得順・フォールバックを追記
 
 ## [1.0.9] - 2026-09-06
 

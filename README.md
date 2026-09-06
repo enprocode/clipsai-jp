@@ -34,6 +34,30 @@ pip install clipsai-jp
 - GPUメモリ監視: `pip install clipsai-jp[gpu]`
 - 開発・テスト用: `pip install clipsai-jp[dev]`
 
+### LLM によるクリップ検出（任意）
+
+デフォルトはローカルの TextTiling のみです。OpenAI / Anthropic / Gemini / OpenAI互換 API（Ollama、Groq など）を併用すると、意味の切れ目での分割精度が上がります。キーはコードに書かず、環境変数で渡してください。ライブラリ本体は `.env` を読み込みません。
+
+| プロバイダ | 環境変数 | デフォルトモデル |
+|---|---|---|
+| OpenAI | `OPENAI_API_KEY` | `gpt-4o-mini` |
+| Anthropic | `ANTHROPIC_API_KEY` | `claude-sonnet-4-5` |
+| Gemini | `GEMINI_API_KEY` | `gemini-2.5-flash` |
+| OpenAI互換 | `LLM_API_KEY`（ローカルなら不要） | `llm_model` 必須 |
+
+```python
+from clipsai_jp import ClipFinder
+
+clipfinder = ClipFinder(
+    use_llm=True,
+    llm_provider="openai",  # openai / anthropic / gemini / openai_compatible
+    llm_model="gpt-4o-mini",
+    llm_priority=0.7,
+)
+```
+
+キーの優先順位は **引数 `llm_api_key` → プロバイダ専用の環境変数 → `LLM_API_KEY`** です。キーが無い、または API 呼び出しに失敗した場合は警告を出して TextTiling のみで動作します。詳細は [`docs/sample-code.md`](docs/sample-code.md) を参照してください。
+
 ## ドキュメント
 
 使用方法、サンプルコード、パラメータ設定などの詳細については、[`docs/sample-code.md`](docs/sample-code.md)を参照してください。
