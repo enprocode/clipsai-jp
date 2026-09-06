@@ -30,9 +30,10 @@ class TextEmbedder:
         Parameters
         ----------
         model_name: str or None
-            SentenceTransformer model name. If None, uses default.
-            Can also use shortcut: "japanese", "high_accuracy", "large"
-            Full model names can be used directly (e.g., "all-roberta-large-v1")
+            SentenceTransformer model name. If None, uses the English-centric
+            ``default`` model. Shortcuts: "japanese", "high_accuracy",
+            "large", "default". ClipFinder defaults to "japanese".
+            Full model names can be used directly.
 
         Returns
         -------

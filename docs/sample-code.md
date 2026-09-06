@@ -208,7 +208,8 @@ clipfinder = ClipFinder(
     min_clip_duration=10,      # 最小クリップ長（秒）
     max_clip_duration=60,      # 最大クリップ長（秒）- ショート動画は60秒以下
     cutoff_policy="average",   # 境界検出の厳しさ: "low"（緩い）/ "average"（標準）/ "high"（厳しい）
-    embedding_model="japanese",  # 日本語最適化モデル（精度向上）
+    embedding_model="japanese",  # 日本語最適化モデル（ClipFinderのデフォルト）
+        max_clips=8,               # 省略時もショートでは上位8件（全件は max_clips=0）
 )
 ```
 
@@ -219,12 +220,14 @@ clipfinder = ClipFinder(
   - `"low"`: 緩い検出（多くのクリップが生成される可能性）
   - `"average"`: 標準的な検出（推奨）
   - `"high"`: 厳しい検出（少ないクリップが生成される可能性）
-- `embedding_model` (デフォルト: None): テキスト埋め込みに使用するAIモデル
-  - `None` または未指定: デフォルトモデル（`all-roberta-large-v1`、英語特化、高速）
-  - `"japanese"`: 日本語最適化モデル（`paraphrase-multilingual-mpnet-base-v2`、推奨）
+- `embedding_model` (デフォルト: `"japanese"`): テキスト埋め込みに使用するAIモデル
+  - `"japanese"`: 日本語最適化モデル（`paraphrase-multilingual-mpnet-base-v2`、推奨・デフォルト）
+  - `"default"`: 英語特化モデル（`all-roberta-large-v1`）
   - `"high_accuracy"`: 高精度モデル（`intfloat/multilingual-e5-base`、多言語対応）
   - `"large"`: 最高精度モデル（`intfloat/multilingual-e5-large`、処理時間が長い）
   - 完全なモデル名を直接指定することも可能（例: `"sentence-transformers/paraphrase-multilingual-mpnet-base-v2"`）
+- `clip_style` (デフォルト: `"auto"`): `"auto"` は `max_clip_duration<=90` のときショート向け（文連続候補・フック評価・重複抑制）。`"shorts"` で常にショート向け、`"longform"` で従来の TextTiling のみ
+- `max_clips` (デフォルト: None): ショート向け処理で返す最大件数。未指定なら 8 件。`0` で重複抑制後の全件
 
 **Gemini APIを使用して精度を向上させる場合:**
 
