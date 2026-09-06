@@ -12,7 +12,7 @@ scipy>=1.15.3,<2.0.0
 # torchaudio 2.9.0以降ではAudioMetaDataが削除されているため、torchも2.9.0未満に制限
 torch>=2.8.0,<2.9.0
 torchaudio>=2.8.0,<2.9.0
-sentence-transformers>=5.6.0,<6.0.0
+sentence-transformers>=6.0.1,<7.0.0
 scikit-learn>=1.7.2,<2.0.0
 # sentence-transformers は transformers>=4.41 を許容するが、4.x には RCE CVE が残る
 transformers>=5.16.1,<6.0.0

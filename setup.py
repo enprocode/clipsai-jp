@@ -45,7 +45,7 @@ setup(
         "scenedetect>=0.6.5,<0.8.0",
 
         # 機械学習（必須）
-        "sentence-transformers>=3.0.0,<6.0.0",
+        "sentence-transformers>=3.0.0,<7.0.0",
         "scikit-learn>=1.7.2,<2.0.0",
         # sentence-transformers は transformers>=4.41 を許容するが、
         # 4.x 系には RCE 等の未修正 CVE が残るため 5.16.1 以上に固定
