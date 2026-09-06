@@ -305,7 +305,7 @@ clipfinder = ClipFinder(
 | Gemini | `GEMINI_API_KEY` | `x-goog-api-key` |
 | OpenAI互換（Ollama 等） | `LLM_API_KEY`（任意） | キーがあれば Bearer。ローカルならキーなしで可 |
 
-`clipsai_jp` 本体は `.env` を読み込みません。環境変数をセットするか、サンプルのように `python-dotenv` で読み込んでください。ログにはプロバイダ名とモデル名だけ出し、キーは出しません。API 呼び出しに失敗した場合も TextTiling にフォールバックします。
+`clipsai_jp` 本体は `.env` を読み込みません。環境変数をセットするか、サンプルのように `python-dotenv` で読み込んでください。ログにはプロバイダ名とモデル名だけ出し、キーは出しません。API 呼び出しに失敗しても例外では止まりませんが、`llm_priority=1.0` のときはクリップが 0 件になることがあります（詳細は [LLM によるクリップ検出](llm-clip-finding.md)）。
 
 【方法1】.envファイルを使用（サンプル向け・推奨）
 
@@ -376,7 +376,7 @@ clipfinder = ClipFinder(
 ```
 
 **注意:**
-- LLM 補助はオプショナルです（`use_llm` のデフォルトは False）。キーが無い、または API 呼び出しに失敗した場合でも TextTiling のみで動作します。
+- LLM 補助はオプショナルです（`use_llm` のデフォルトは False）。キーが無い場合は TextTiling のみです。API 失敗時に TextTiling を残すなら `llm_priority` は 1.0 未満にしてください。
 - `sample/clip_video.py` はデモとして `use_llm=True, llm_provider="openai"` になっているため、動かすには `OPENAI_API_KEY` が必要です（未設定なら TextTiling のみ）。
 - MeCabもオプショナル機能です。MeCabがインストールされていない場合、自動的にNLTKにフォールバックします。ただし、MeCabをインストールすることで、日本語の文分割精度が向上し、より自然な動画分割が可能になります。
 

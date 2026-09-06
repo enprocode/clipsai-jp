@@ -88,13 +88,12 @@ clipfinder = ClipFinder(
     llm_base_url="http://localhost:11434/v1",
 )
 
-# Groq などクラウドの互換 API
+# Groq などクラウドの互換 API（キーは環境変数 LLM_API_KEY）
 clipfinder = ClipFinder(
     use_llm=True,
     llm_provider="openai_compatible",
     llm_model="llama-3.3-70b-versatile",
     llm_base_url="https://api.groq.com/openai/v1",
-    llm_api_key=os.environ["LLM_API_KEY"],
 )
 ```
 
@@ -120,7 +119,7 @@ clipfinder = ClipFinder(
 3. 共通フォールバック `LLM_API_KEY`
 4. それでも無い場合: 警告を出して LLM をオフにし、TextTiling のみで動作
 
-キーが無い、または API 呼び出しに失敗した場合も処理は止まりません。ログにはプロバイダ名とモデル名だけ出し、キーは出しません。
+キーが無い場合は LLM を初期化せず、TextTiling のみで動作します。API 呼び出しに失敗しても例外では止まりませんが、内部では空の提案リストになるため、`llm_priority=1.0` だとマージ結果も空になりクリップが 0 件になることがあります。TextTiling を残すなら `llm_priority` は 1.0 未満（推奨 0.6〜0.8）にしてください。ログにはプロバイダ名とモデル名だけ出し、キーは出しません。
 
 `clipsai_jp` 本体は `.env` を読み込みません。サンプル（`sample/clip_video.py`）は `python-dotenv` で `sample/.env` を読むだけです。雛形は `sample/.env.example` です。
 
@@ -129,10 +128,9 @@ clipfinder = ClipFinder(
 旧引数は動きますが非推奨です。内部では `use_llm=True, llm_provider="gemini"` に変換されます。
 
 ```python
-# 1.0.x（非推奨・まだ動く）
+# 1.0.x（非推奨・まだ動く。キーは GEMINI_API_KEY）
 ClipFinder(
     use_gemini=True,
-    gemini_api_key=os.environ["GEMINI_API_KEY"],
     gemini_model="gemini-3.8-flash",
     gemini_priority=0.5,
 )

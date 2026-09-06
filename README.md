@@ -11,7 +11,7 @@ Clips AIは、長い動画を自動的にクリップに変換するオープン
 
 > **注意:** Clips AIは、ポッドキャスト、インタビュー、スピーチ、説教などの音声中心のナラティブ動画向けに設計されています。
 
-このフォーク版の使い方は [`docs/`](docs/README.md) を参照してください。オリジナル（英語・更新停止）の解説は [Clips AI Documentation](https://clipsai.com) にあります。
+このフォーク版の使い方は [docs/](https://github.com/enprocode/clipsai-jp/blob/main/docs/README.md) を参照してください。オリジナル（英語・更新停止）の解説は [Clips AI Documentation](https://clipsai.com) にあります。
 
 ### インストール
 
@@ -56,16 +56,16 @@ clipfinder = ClipFinder(
 )
 ```
 
-キーの優先順位は **引数 `llm_api_key` → プロバイダ専用の環境変数 → `LLM_API_KEY`** です。キーが無い、または API 呼び出しに失敗した場合は警告を出して TextTiling のみで動作します。
+キーの優先順位は **引数 `llm_api_key` → プロバイダ専用の環境変数 → `LLM_API_KEY`** です。キーが無い場合は警告を出して TextTiling のみで動作します。API 呼び出しに失敗しても処理は止まりませんが、`llm_priority=1.0` のときは LLM の空提案が返り、クリップが 0 件になることがあります。TextTiling を残すなら `llm_priority` は 1.0 未満（推奨 0.6〜0.8）にしてください。
 
-1.0.x の `use_gemini=True` は 1.1.0 でも動きますが非推奨です。`use_llm=True, llm_provider="gemini"` に置き換えてください。詳細は [`docs/llm-clip-finding.md`](docs/llm-clip-finding.md) を参照してください。
+1.0.x の `use_gemini=True` は 1.1.0 でも動きますが非推奨です。`use_llm=True, llm_provider="gemini"` に置き換えてください。詳細は [LLM によるクリップ検出](https://github.com/enprocode/clipsai-jp/blob/main/docs/llm-clip-finding.md) を参照してください。
 
 ## ドキュメント
 
 | ガイド | 内容 |
 |---|---|
-| [ドキュメント一覧](docs/README.md) | このフォーク版の目次 |
-| [サンプルコードとパラメータ](docs/sample-code.md) | 文字起こし・クリップ検出・リサイズ |
-| [LLM によるクリップ検出](docs/llm-clip-finding.md) | プロバイダ、キー、`use_gemini` からの移行 |
-| [Sandbox ノートブック](docs/sandbox-notebooks.md) | Jupyter での実験 |
-| [変更履歴](CHANGELOG.md) | バージョンごとの差分 |
+| [ドキュメント一覧](https://github.com/enprocode/clipsai-jp/blob/main/docs/README.md) | このフォーク版の目次 |
+| [サンプルコードとパラメータ](https://github.com/enprocode/clipsai-jp/blob/main/docs/sample-code.md) | 文字起こし・クリップ検出・リサイズ |
+| [LLM によるクリップ検出](https://github.com/enprocode/clipsai-jp/blob/main/docs/llm-clip-finding.md) | プロバイダ、キー、`use_gemini` からの移行 |
+| [Sandbox ノートブック](https://github.com/enprocode/clipsai-jp/blob/main/docs/sandbox-notebooks.md) | Jupyter での実験 |
+| [変更履歴](https://github.com/enprocode/clipsai-jp/blob/main/CHANGELOG.md) | バージョンごとの差分 |
