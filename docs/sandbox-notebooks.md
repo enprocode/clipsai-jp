@@ -50,7 +50,7 @@ export PYANNOTE_AUTH_TOKEN="your_token_here"
 
 トークンの取得方法: [Pyannote HuggingFace](https://huggingface.co/pyannote/speaker-diarization-3.0#requirements)
 
-クリップ検出で LLM を使う場合は、プロバイダの API キーも環境変数で渡します（コードに書かないこと）。詳細は [`docs/sample-code.md`](sample-code.md) の「APIキーの扱い」を参照してください。
+クリップ検出で LLM を使う場合は、プロバイダの API キーも環境変数で渡します（コードに書かないこと）。詳細は [`llm-clip-finding.md`](llm-clip-finding.md) を参照してください。
 
 ```bash
 export OPENAI_API_KEY="your_openai_api_key_here"
@@ -80,7 +80,7 @@ export OPENAI_API_KEY="your_openai_api_key_here"
 - **Data**: 動画ファイルパスと認証トークンの設定
 - **Resize**: 動画のリサイズ処理
 - **Transcribe**: 動画の文字起こし処理
-- **Clip**: 文字起こし結果からのクリップ検出
+- **Clip**: 文字起こし結果からのクリップ検出（既定は TextTiling。任意で `use_llm=True`）
 
 ### 2. `resizer.ipynb`
 
@@ -256,7 +256,9 @@ pip install -e .[dev]
 
 ## 関連ドキュメント
 
+- [ドキュメント一覧](./README.md)
 - [サンプルコード](./sample-code.md): 実用的なサンプルコードの使用方法
+- [LLM によるクリップ検出](./llm-clip-finding.md)
 - [README](../README.md): プロジェクトの概要とインストール方法
 - [CHANGELOG](../CHANGELOG.md): 変更履歴
 

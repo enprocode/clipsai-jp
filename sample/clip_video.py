@@ -4,7 +4,7 @@
 このサンプルでは、動画を文字起こしして、そのトランスクリプトから
 自動的にクリップを見つける方法を示します。
 
-詳細な使用方法については、docs/sample-code.mdを参照してください。
+詳細な使用方法については、docs/sample-code.md および docs/llm-clip-finding.md を参照してください。
 """
 
 # 標準ライブラリ
@@ -144,7 +144,7 @@ def main() -> None:
     # )
 
     # LLM でクリップ検出精度を上げる場合（OpenAI / Anthropic / Gemini / 互換API）:
-    # 詳細は docs/sample-code.md の「LLM APIを使用して精度を向上させる場合」を参照。
+    # 詳細は docs/llm-clip-finding.md を参照。
     clipfinder = ClipFinder(
         min_clip_duration=10,
         max_clip_duration=60,

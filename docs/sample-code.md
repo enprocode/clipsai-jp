@@ -1,12 +1,12 @@
-# ClipsAI サンプルコード
+# ClipsAI-JP サンプルコード
 
-このドキュメントでは、ClipsAIライブラリの使用方法を示すサンプルコードについて説明します。
+このドキュメントでは、`clipsai_jp` ライブラリの使用方法を示すサンプルコードについて説明します。LLM クリップ検出の詳細は [llm-clip-finding.md](llm-clip-finding.md) を参照してください。
 
 ## 前提条件
 
 ### Pythonのインストール
 
-ClipsAIを使用するには、**Python 3.10以上**が必要です。
+ClipsAI-JPを使用するには、**Python 3.10以上**が必要です。
 
 #### Pythonのバージョン確認
 
@@ -209,7 +209,7 @@ clipfinder = ClipFinder(
     max_clip_duration=60,      # 最大クリップ長（秒）- ショート動画は60秒以下
     cutoff_policy="average",   # 境界検出の厳しさ: "low"（緩い）/ "average"（標準）/ "high"（厳しい）
     embedding_model="japanese",  # 日本語最適化モデル（ClipFinderのデフォルト）
-        max_clips=8,               # 省略時もショートでは上位8件（全件は max_clips=0）
+    max_clips=8,               # 省略時もショートでは上位8件（全件は max_clips=0）
 )
 ```
 
@@ -231,7 +231,7 @@ clipfinder = ClipFinder(
 
 **LLM APIを使用して精度を向上させる場合:**
 
-TextTiling（埋め込みの類似度で境界を切る）に加えて、任意の LLM にトピック境界を提案させると、日本語の意味の切れ目をより自然に取れます。Gemini 専用ではなく、OpenAI / Anthropic / Gemini / OpenAI互換サーバから選べます。
+TextTiling（埋め込みの類似度で境界を切る）に加えて、任意の LLM にトピック境界を提案させると、日本語の意味の切れ目をより自然に取れます。Gemini 専用ではなく、OpenAI / Anthropic / Gemini / OpenAI互換サーバから選べます。プロバイダ別の例・キーの優先順位・`use_gemini` からの移行は [LLM によるクリップ検出](llm-clip-finding.md) にまとめています。
 
 ```python
 # OpenAI（例）
@@ -578,5 +578,10 @@ pip install -e .
 
 ## 詳細情報
 
-完全なドキュメントについては、[Clips AI Documentation](https://clipsai.com)をご覧ください。
+- [ドキュメント一覧](README.md)
+- [LLM によるクリップ検出](llm-clip-finding.md)
+- [Sandbox ノートブック](sandbox-notebooks.md)
+- [変更履歴](../CHANGELOG.md)
+
+オリジナル（英語・更新停止）の解説は [Clips AI Documentation](https://clipsai.com) にあります。このフォーク版のパッケージ名は `clipsai_jp` です。
 
