@@ -16,7 +16,7 @@ Clips AIは、長い動画を自動的にクリップに変換するオープン
 ### インストール
 
 **前提条件:**
-- Python >= 3.9
+- Python >= 3.10
 - [libmagic](https://github.com/ahupp/python-magic?tab=readme-ov-file#debianubuntu)（Windows: `pip install python-magic-bin`、Mac: `brew install libmagic`）
 - [ffmpeg](https://github.com/kkroening/ffmpeg-python/tree/master?tab=readme-ov-file#installing-ffmpeg)（Windows: [ffmpeg.org](https://ffmpeg.org/download.html)からダウンロード、Mac: `brew install ffmpeg`）
 

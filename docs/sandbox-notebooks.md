@@ -10,7 +10,7 @@
 
 ### 1. 必要なソフトウェア
 
-- **Python 3.9以上**
+- **Python 3.10以上**
 - **Jupyter Notebook** または **JupyterLab**
 - **開発モードでインストールされたclipsai-jp**
 

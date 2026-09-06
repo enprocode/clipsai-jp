@@ -1,7 +1,8 @@
 import pytest
+import numpy
 from unittest.mock import MagicMock
 from clipsai_jp.clip.clipfinder import ClipFinderConfigManager
-from clipsai_jp.clip.texttiler import TextTilerConfigManager
+from clipsai_jp.clip.texttiler import TextTilerConfigManager, smooth
 from clipsai_jp.transcribe.transcription import Transcription
 
 
@@ -77,3 +78,28 @@ def test_texttiler_config_manager_invalid_config(
         "window_compare_pool_method": "invalid_method",
     }
     assert isinstance(texttiler_config_manager.check_valid_config(config), str)
+
+
+def test_smooth_flat_window_returns_same_length():
+    x = numpy.linspace(0.0, 1.0, 20)
+    y = smooth(x, window_len=5, window="flat")
+    assert y.shape == x.shape
+    assert numpy.isfinite(y).all()
+
+
+@pytest.mark.parametrize("window", ["hanning", "hamming", "bartlett", "blackman"])
+def test_smooth_named_windows(window):
+    x = numpy.linspace(0.0, 1.0, 20)
+    y = smooth(x, window_len=5, window=window)
+    assert y.shape == x.shape
+    assert numpy.isfinite(y).all()
+
+
+def test_smooth_rejects_malicious_window_without_eval():
+    x = numpy.linspace(0.0, 1.0, 20)
+    with pytest.raises(ValueError, match="Window is one of"):
+        smooth(
+            x,
+            window_len=5,
+            window="ones); __import__('os').system('true') #",
+        )
