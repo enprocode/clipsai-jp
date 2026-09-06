@@ -135,25 +135,25 @@ def main() -> None:
     #     embedding_model="japanese",  # 日本語最適化モデル（精度向上）
     # )
 
-    # より高精度なモデルを使用する場合:
+    # より高精度な埋め込みモデルを使う場合:
     # clipfinder = ClipFinder(
     #     min_clip_duration=10,
     #     max_clip_duration=60,
     #     cutoff_policy="average",
-    #     embedding_model="high_accuracy",  # または "intfloat/multilingual-e5-base"
+    #     embedding_model="high_accuracy",  # または "large"
     # )
 
-    # Gemini APIを使用してクリップ検出精度を向上させる場合:
-    # 詳細な設定方法については、docs/sample-code.mdの「Gemini APIを使用して精度を向上させる場合」セクションを参照してください。
+    # LLM でクリップ検出精度を上げる場合（OpenAI / Anthropic / Gemini / 互換API）:
+    # 詳細は docs/sample-code.md の「LLM APIを使用して精度を向上させる場合」を参照。
     clipfinder = ClipFinder(
         min_clip_duration=10,
         max_clip_duration=60,
         cutoff_policy="average",
         embedding_model="japanese",
-        use_gemini=True,  # Gemini APIを使用
-        gemini_api_key=os.getenv("GEMINI_API_KEY"),  # 環境変数から取得（推奨）
-        gemini_model="gemini-2.5-flash",  # または "gemini-2.5-pro"（高精度）
-        gemini_priority=0.7,  # Geminiの提案を70%重視（0.0=TextTilingのみ, 1.0=Geminiのみ）
+        use_llm=True,
+        llm_provider="openai",  # openai / anthropic / gemini / openai_compatible
+        llm_model="gpt-4o-mini",  # 高精度なら gpt-4o や claude-sonnet-4-5
+        llm_priority=0.7,  # 0.0=TextTilingのみ, 1.0=LLMのみ
     )
 
     clips = clipfinder.find_clips(transcription=transcription)

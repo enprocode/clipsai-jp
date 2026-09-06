@@ -8,7 +8,7 @@ import pytest
 import torch
 
 from clipsai_jp.clip.clipfinder import ClipFinder
-from clipsai_jp.clip.gemini_clipfinder import GeminiClipFinder
+from clipsai_jp.clip.llm_clipfinder import LlmClipFinder
 from clipsai_jp.clip.shorts import (
     MAX_GENERATED_WINDOWS,
     OPENING_PRIORITY_START,
@@ -408,8 +408,8 @@ def test_text_tile_does_not_reuse_boundary_sentence():
     assert super_clips[1]["start_time"] == 3.0
 
 
-def test_gemini_shorts_prompt_mentions_hooks():
-    prompt = GeminiClipFinder._build_prompt(
+def test_llm_shorts_prompt_mentions_hooks():
+    prompt = LlmClipFinder._build_prompt(
         "プレビュー",
         [{"index": 0, "start_time": 0, "end_time": 5, "sentence": "こんにちは。"}],
         10,
@@ -418,7 +418,7 @@ def test_gemini_shorts_prompt_mentions_hooks():
     )
     assert "YouTubeショート" in prompt
     assert "フック" in prompt
-    longform = GeminiClipFinder._build_prompt(
+    longform = LlmClipFinder._build_prompt(
         "プレビュー",
         [{"index": 0, "start_time": 0, "end_time": 5, "sentence": "こんにちは。"}],
         10,

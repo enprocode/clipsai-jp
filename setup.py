@@ -79,9 +79,6 @@ setup(
         "urllib3>=2.7.0",
         "requests>=2.34.2",
         "jinja2>=3.1.6",
-        
-        # Gemini API（クリップ検出精度向上用）
-        "google-genai>=1.0.0",
     ],
     zip_safe=False,
     python_requires=">=3.10",

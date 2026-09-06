@@ -4,12 +4,13 @@ Finding clips with AudioFiles using the TextTiling algorithm.
 
 # standard library imports
 import logging
+import warnings
 from typing import List
 
 # current package imports
 from .clip import Clip
 from .exceptions import ClipFinderError
-from .gemini_clipfinder import GeminiClipFinder
+from .llm_clipfinder import LlmClipFinder, normalize_llm_provider
 from .shorts import (
     SHORTS_DEFAULT_MAX_CLIPS,
     generate_sentence_windows,
@@ -47,6 +48,12 @@ class ClipFinder:
         smoothing_width: int = 3,
         window_compare_pool_method: str = "mean",
         embedding_model: str = "japanese",
+        use_llm: bool = False,
+        llm_provider: str = "openai",
+        llm_api_key: str = None,
+        llm_model: str = None,
+        llm_base_url: str = None,
+        llm_priority: float = 0.5,
         use_gemini: bool = False,
         gemini_api_key: str = None,
         gemini_model: str = "gemini-2.5-flash",
@@ -83,14 +90,27 @@ class ClipFinder:
             ``japanese`` (multilingual MPNet). Shortcuts: 'japanese',
             'high_accuracy', 'large', 'default' (英語特化). Full model names
             are also accepted. See TextEmbedder.RECOMMENDED_MODELS.
+        use_llm: bool
+            LLM APIでクリップ境界を補助するかどうか（デフォルト: False）
+        llm_provider: str
+            LLMプロバイダ。``openai`` / ``anthropic`` / ``gemini`` /
+            ``openai_compatible``（Ollama、Groq などの互換API）
+        llm_api_key: str or None
+            LLM APIキー。None の場合はプロバイダごとの環境変数から取得
+        llm_model: str or None
+            使用するモデル名。None ならプロバイダのデフォルト
+        llm_base_url: str or None
+            APIのベースURL。``openai_compatible`` では必須
+        llm_priority: float
+            LLM提案の重み（0.0=TextTilingのみ, 1.0=LLMのみ、デフォルト: 0.5）
         use_gemini: bool
-            Gemini APIを使用するかどうか（デフォルト: False）
+            非推奨。``use_llm=True, llm_provider="gemini"`` と同等
         gemini_api_key: str or None
-            Gemini APIキー。Noneの場合は環境変数 GEMINI_API_KEY から取得
+            非推奨。``llm_api_key`` を使うこと
         gemini_model: str
-            使用するGeminiモデル名（デフォルト: "gemini-2.5-flash"）
+            非推奨。``llm_model`` を使うこと
         gemini_priority: float
-            Geminiの提案の重み（0.0=TextTilingのみ, 1.0=Geminiのみ、デフォルト: 0.5）
+            非推奨。``llm_priority`` を使うこと
         clip_style: str
             ``auto`` は max_clip_duration が 90 秒以下ならショート向け処理、
             ``shorts`` は常にショート向け、``longform`` は従来の TextTiling のみ。
@@ -133,24 +153,41 @@ class ClipFinder:
         self._clip_style = clip_style
         self._max_clips = max_clips
 
-        # Gemini統合の初期化
-        if use_gemini:
+        # LLM統合の初期化（use_gemini は後方互換のエイリアス）
+        llm_config = self._resolve_llm_config(
+            use_llm=use_llm,
+            llm_provider=llm_provider,
+            llm_api_key=llm_api_key,
+            llm_model=llm_model,
+            llm_base_url=llm_base_url,
+            llm_priority=llm_priority,
+            use_gemini=use_gemini,
+            gemini_api_key=gemini_api_key,
+            gemini_model=gemini_model,
+            gemini_priority=gemini_priority,
+        )
+        self._llm_finder = None
+        self._use_llm = False
+        self._llm_priority = llm_config["priority"]
+        if llm_config["enabled"]:
             try:
-                self._gemini_finder = GeminiClipFinder(
-                    api_key=gemini_api_key,
-                    model=gemini_model,
+                self._llm_finder = LlmClipFinder(
+                    provider=llm_config["provider"],
+                    api_key=llm_config["api_key"],
+                    model=llm_config["model"],
+                    base_url=llm_config["base_url"],
                 )
-                self._use_gemini = True
-                self._gemini_priority = gemini_priority
-                logging.info("Gemini clip finder initialized")
+                self._use_llm = True
+                logging.info(
+                    "LLM clip finder initialized (%s/%s)",
+                    self._llm_finder.provider,
+                    self._llm_finder.model_name,
+                )
             except Exception as e:
                 logging.warning(
-                    f"Failed to initialize Gemini: {e}. "
+                    f"Failed to initialize LLM clip finder: {e}. "
                     "Falling back to TextTiling only."
                 )
-                self._use_gemini = False
-        else:
-            self._use_gemini = False
 
     def find_clips(
         self,
@@ -246,10 +283,10 @@ class ClipFinder:
                     clips,
                 )
 
-        # Geminiを使用する場合
-        if self._use_gemini:
+        # LLMを使用する場合
+        if self._use_llm:
             try:
-                gemini_boundaries = self._gemini_finder.suggest_clip_boundaries(
+                llm_boundaries = self._llm_finder.suggest_clip_boundaries(
                     transcription.text,
                     sentences_info,
                     self._min_clip_duration,
@@ -257,30 +294,27 @@ class ClipFinder:
                     for_shorts=shorts_mode,
                 )
 
-                # Geminiの提案をクリップ形式に変換
-                gemini_clips = self._convert_gemini_boundaries_to_clips(
-                    gemini_boundaries,
+                llm_clips = self._convert_llm_boundaries_to_clips(
+                    llm_boundaries,
                     transcription,
                 )
 
-                # TextTilingとGeminiの結果を統合
                 clips = self._merge_clip_proposals(
-                    clips,  # TextTilingの結果
-                    gemini_clips,  # Geminiの結果
-                    self._gemini_priority,
+                    clips,
+                    llm_clips,
+                    self._llm_priority,
                     transcription,
                 )
 
                 logging.info(
-                    f"Combined {len(clips)} clips from TextTiling and Gemini "
-                    f"(Gemini suggested {len(gemini_clips)} clips)"
+                    f"Combined {len(clips)} clips from TextTiling and LLM "
+                    f"(LLM suggested {len(llm_clips)} clips)"
                 )
 
             except Exception as e:
                 logging.error(
-                    f"Gemini processing failed: {e}. " "Using TextTiling results only."
+                    f"LLM processing failed: {e}. Using TextTiling results only."
                 )
-                # Gemini失敗時はTextTilingの結果のみを使用
 
         # 動画の長さを取得
         video_duration = transcription.end_time
@@ -550,18 +584,96 @@ class ClipFinder:
 
         return False
 
-    def _convert_gemini_boundaries_to_clips(
-        self,
-        gemini_boundaries: List[dict],
-        transcription: Transcription,
-    ) -> List[dict]:
+    @staticmethod
+    def _resolve_llm_config(
+        use_llm: bool,
+        llm_provider: str,
+        llm_api_key: str,
+        llm_model: str,
+        llm_base_url: str,
+        llm_priority: float,
+        use_gemini: bool,
+        gemini_api_key: str,
+        gemini_model: str,
+        gemini_priority: float,
+    ) -> dict:
         """
-        Geminiの境界提案をクリップ形式に変換
+        新API（use_llm）と旧API（use_gemini）からLLM設定を解決する。
 
         Parameters
         ----------
-        gemini_boundaries: List[dict]
-            Gemini APIから返された境界提案リスト
+        use_llm: bool
+            新APIの有効フラグ
+        llm_provider: str
+            プロバイダ名
+        llm_api_key: str or None
+            APIキー
+        llm_model: str or None
+            モデル名
+        llm_base_url: str or None
+            ベースURL
+        llm_priority: float
+            LLM提案の重み
+        use_gemini: bool
+            旧APIの有効フラグ
+        gemini_api_key: str or None
+            旧APIのキー
+        gemini_model: str
+            旧APIのモデル名
+        gemini_priority: float
+            旧APIの重み
+
+        Returns
+        -------
+        dict
+            enabled / provider / api_key / model / base_url / priority
+        """
+        if use_llm:
+            return {
+                "enabled": True,
+                "provider": normalize_llm_provider(llm_provider),
+                "api_key": llm_api_key,
+                "model": llm_model,
+                "base_url": llm_base_url,
+                "priority": llm_priority,
+            }
+        if use_gemini:
+            warnings.warn(
+                "use_gemini is deprecated. Use use_llm=True and "
+                "llm_provider='gemini' (or another provider such as "
+                "'openai' / 'anthropic').",
+                DeprecationWarning,
+                stacklevel=3,
+            )
+            return {
+                "enabled": True,
+                "provider": "gemini",
+                "api_key": gemini_api_key or llm_api_key,
+                "model": gemini_model if gemini_model else llm_model,
+                "base_url": llm_base_url,
+                "priority": gemini_priority,
+            }
+        return {
+            "enabled": False,
+            "provider": normalize_llm_provider(llm_provider),
+            "api_key": llm_api_key,
+            "model": llm_model,
+            "base_url": llm_base_url,
+            "priority": llm_priority,
+        }
+
+    def _convert_llm_boundaries_to_clips(
+        self,
+        llm_boundaries: List[dict],
+        transcription: Transcription,
+    ) -> List[dict]:
+        """
+        LLMの境界提案をクリップ形式に変換する。
+
+        Parameters
+        ----------
+        llm_boundaries: List[dict]
+            LLM APIから返された境界提案リスト
         transcription: Transcription
             文字起こしオブジェクト
 
@@ -573,7 +685,7 @@ class ClipFinder:
         clips = []
         video_duration = transcription.end_time
 
-        for boundary in gemini_boundaries:
+        for boundary in llm_boundaries:
             start_time = boundary.get("start_time", 0)
             end_time = boundary.get("end_time", 0)
 
@@ -586,7 +698,7 @@ class ClipFinder:
             # 開始時間が終了時間より後、または動画の長さを超える場合はスキップ
             if start_time >= end_time or start_time >= video_duration:
                 logging.warning(
-                    f"Skipping invalid Gemini boundary: "
+                    f"Skipping invalid LLM boundary: "
                     f"start_time={boundary.get('start_time', 0):.2f}s, "
                     f"end_time={boundary.get('end_time', 0):.2f}s, "
                     f"video_duration={video_duration:.2f}s"
@@ -620,7 +732,7 @@ class ClipFinder:
                     "start_char": start_char_index,
                     "end_char": end_char_index,
                     "norm": 1.0,
-                    "source": "gemini",  # ソースを記録
+                    "source": "llm",
                 }
             )
 
@@ -629,21 +741,21 @@ class ClipFinder:
     def _merge_clip_proposals(
         self,
         texttiling_clips: List[dict],
-        gemini_clips: List[dict],
-        gemini_priority: float,
+        llm_clips: List[dict],
+        llm_priority: float,
         transcription: Transcription,
     ) -> List[dict]:
         """
-        TextTilingとGeminiの提案を統合
+        TextTilingとLLMの提案を統合する。
 
         Parameters
         ----------
         texttiling_clips: List[dict]
             TextTilingアルゴリズムで検出されたクリップリスト
-        gemini_clips: List[dict]
-            Gemini APIで提案されたクリップリスト
-        gemini_priority: float
-            Geminiの提案の重み（0.0-1.0）
+        llm_clips: List[dict]
+            LLM APIで提案されたクリップリスト
+        llm_priority: float
+            LLMの提案の重み（0.0-1.0）
         transcription: Transcription
             文字起こしオブジェクト（統合後の時間に対応する文字インデックスの再計算に使用）
 
@@ -652,10 +764,10 @@ class ClipFinder:
         List[dict]
             統合されたクリップリスト
         """
-        if gemini_priority == 0.0:
+        if llm_priority == 0.0:
             return texttiling_clips
-        if gemini_priority == 1.0:
-            return gemini_clips
+        if llm_priority == 1.0:
+            return llm_clips
 
         # 重複を除去してマージ
         merged_clips = []
@@ -663,17 +775,17 @@ class ClipFinder:
         # TextTilingのクリップを追加
         for clip in texttiling_clips:
             clip_with_weight = clip.copy()
-            clip_with_weight["weight"] = 1.0 - gemini_priority
+            clip_with_weight["weight"] = 1.0 - llm_priority
             merged_clips.append(clip_with_weight)
 
-        # Geminiのクリップを追加（重複チェック）
-        for gemini_clip in gemini_clips:
+        # LLMのクリップを追加（重複チェック）
+        for llm_clip in llm_clips:
             # 時間範囲が重複するクリップをチェック
             is_duplicate = False
             for existing_clip in merged_clips:
                 overlap = self._calculate_overlap(
-                    gemini_clip["start_time"],
-                    gemini_clip["end_time"],
+                    llm_clip["start_time"],
+                    llm_clip["end_time"],
                     existing_clip["start_time"],
                     existing_clip["end_time"],
                 )
@@ -681,15 +793,15 @@ class ClipFinder:
                     is_duplicate = True
                     # 重複している場合は、重み付き平均で更新
                     existing_weight = existing_clip["weight"]
-                    total_weight = existing_weight + gemini_priority
+                    total_weight = existing_weight + llm_priority
 
                     existing_clip["start_time"] = (
                         existing_clip["start_time"] * existing_weight
-                        + gemini_clip["start_time"] * gemini_priority
+                        + llm_clip["start_time"] * llm_priority
                     ) / total_weight
                     existing_clip["end_time"] = (
                         existing_clip["end_time"] * existing_weight
-                        + gemini_clip["end_time"] * gemini_priority
+                        + llm_clip["end_time"] * llm_priority
                     ) / total_weight
                     existing_clip["weight"] = 1.0
 
@@ -711,9 +823,9 @@ class ClipFinder:
                     break
 
             if not is_duplicate:
-                gemini_clip_with_weight = gemini_clip.copy()
-                gemini_clip_with_weight["weight"] = gemini_priority
-                merged_clips.append(gemini_clip_with_weight)
+                llm_clip_with_weight = llm_clip.copy()
+                llm_clip_with_weight["weight"] = llm_priority
+                merged_clips.append(llm_clip_with_weight)
 
         # 重みを削除して返す
         return [

@@ -4,6 +4,16 @@
 
 ## [Unreleased]
 
+### 追加
+- クリップ検出の LLM 補助を Gemini 専用から複数プロバイダ対応に変更
+  - `ClipFinder(use_llm=True, llm_provider="openai"|"anthropic"|"gemini"|"openai_compatible")`
+  - OpenAI 互換エンドポイント（Ollama、Groq、vLLM など）は `llm_base_url` で指定
+  - プロバイダ専用 SDK は不要（`requests` で HTTP 呼び出し）
+
+### 変更
+- `google-genai` を必須依存から削除
+- `use_gemini` / `gemini_*` / `GeminiClipFinder` は非推奨の互換エイリアスとして残す
+
 ## [1.0.9] - 2026-09-06
 
 ### 追加
