@@ -311,7 +311,15 @@ class ClipFinder:
             valid_clips.append(clipped)
 
         if shorts_mode:
-            snapped = [snap_clip_to_sentences(c, sentences_info) for c in valid_clips]
+            snapped = [
+                snap_clip_to_sentences(
+                    c,
+                    sentences_info,
+                    min_clip_duration=self._min_clip_duration,
+                    max_clip_duration=self._max_clip_duration,
+                )
+                for c in valid_clips
+            ]
             if self._max_clips == 0:
                 clip_limit = None
             elif self._max_clips is None:

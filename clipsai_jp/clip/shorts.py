@@ -243,12 +243,166 @@ def score_clip_text(
     return score
 
 
+def _sentence_start(sentence: Dict) -> Optional[float]:
+    start_time = sentence.get("start_time")
+    return None if start_time is None else float(start_time)
+
+
+def _sentence_end(sentence: Dict) -> Optional[float]:
+    end_time = sentence.get("end_time")
+    return None if end_time is None else float(end_time)
+
+
+def _has_char_span(sentence: Dict) -> bool:
+    return (
+        sentence.get("start_char") is not None and sentence.get("end_char") is not None
+    )
+
+
+def _sentences_containing(sentences_info: Sequence[Dict], time: float) -> List[Dict]:
+    """時刻が [start_time, end_time] に含まれる文を返す。"""
+    containing: List[Dict] = []
+    for sentence in sentences_info:
+        start_time = _sentence_start(sentence)
+        end_time = _sentence_end(sentence)
+        if start_time is None or end_time is None:
+            continue
+        if start_time - 0.05 <= time <= end_time + 0.05:
+            containing.append(sentence)
+    return containing
+
+
+def _pick_start_sentence(sentences_info: Sequence[Dict], start_time: float) -> Dict:
+    """開始時刻を含む文。無音ギャップなら次の文へ進める。"""
+    containing = _sentences_containing(sentences_info, start_time)
+    if containing:
+        return max(containing, key=lambda s: _sentence_start(s) or 0.0)
+
+    later = [
+        s
+        for s in sentences_info
+        if _sentence_start(s) is not None and _sentence_start(s) >= start_time - 0.05
+    ]
+    if later:
+        return min(later, key=lambda s: _sentence_start(s) or 0.0)
+
+    return min(
+        sentences_info,
+        key=lambda s: abs((_sentence_start(s) or 0.0) - start_time),
+    )
+
+
+def _pick_end_sentence(sentences_info: Sequence[Dict], end_time: float) -> Dict:
+    """終了時刻を含む文。無音ギャップなら前の文へ戻す。"""
+    containing = _sentences_containing(sentences_info, end_time)
+    if containing:
+        return min(containing, key=lambda s: _sentence_end(s) or 0.0)
+
+    earlier = [
+        s
+        for s in sentences_info
+        if _sentence_end(s) is not None and _sentence_end(s) <= end_time + 0.05
+    ]
+    if earlier:
+        return max(earlier, key=lambda s: _sentence_end(s) or 0.0)
+
+    return min(
+        sentences_info,
+        key=lambda s: abs((_sentence_end(s) or 0.0) - end_time),
+    )
+
+
+def _apply_sentence_span(
+    clip: Dict, start_sent: Dict, end_sent: Dict
+) -> Optional[Dict]:
+    """2文の境界でクリップを更新する。不正なら None。"""
+    start_time = _sentence_start(start_sent)
+    end_time = _sentence_end(end_sent)
+    if start_time is None or end_time is None or start_time >= end_time:
+        return None
+    if not _has_char_span(start_sent) or not _has_char_span(end_sent):
+        return None
+    snapped = dict(clip)
+    snapped["start_time"] = start_time
+    snapped["end_time"] = end_time
+    snapped["start_char"] = int(start_sent["start_char"])
+    snapped["end_char"] = int(end_sent["end_char"])
+    return snapped
+
+
+def _trim_snapped_to_duration(
+    snapped: Dict,
+    original: Dict,
+    sentences_info: Sequence[Dict],
+    min_clip_duration: Optional[float],
+    max_clip_duration: Optional[float],
+) -> Dict:
+    """スナップ後に最大尺を超えたら、文境界のまま収まるよう縮める。"""
+    if max_clip_duration is None:
+        return snapped
+
+    duration = snapped["end_time"] - snapped["start_time"]
+    if duration <= max_clip_duration:
+        return snapped
+
+    start_time = snapped["start_time"]
+    end_candidates = []
+    for sentence in sentences_info:
+        end_time = _sentence_end(sentence)
+        if end_time is None or not _has_char_span(sentence):
+            continue
+        candidate_duration = end_time - start_time
+        if candidate_duration <= 0 or candidate_duration > max_clip_duration:
+            continue
+        if min_clip_duration is not None and candidate_duration < min_clip_duration:
+            continue
+        end_candidates.append(sentence)
+    if end_candidates:
+        end_sent = max(end_candidates, key=lambda s: _sentence_end(s) or 0.0)
+        trimmed = dict(snapped)
+        trimmed["end_time"] = float(end_sent["end_time"])
+        trimmed["end_char"] = int(end_sent["end_char"])
+        return trimmed
+
+    end_time = snapped["end_time"]
+    start_candidates = []
+    for sentence in sentences_info:
+        sentence_start = _sentence_start(sentence)
+        if sentence_start is None or not _has_char_span(sentence):
+            continue
+        candidate_duration = end_time - sentence_start
+        if candidate_duration <= 0 or candidate_duration > max_clip_duration:
+            continue
+        if min_clip_duration is not None and candidate_duration < min_clip_duration:
+            continue
+        start_candidates.append(sentence)
+    if start_candidates:
+        start_sent = min(start_candidates, key=lambda s: _sentence_start(s) or 0.0)
+        trimmed = dict(snapped)
+        trimmed["start_time"] = float(start_sent["start_time"])
+        trimmed["start_char"] = int(start_sent["start_char"])
+        return trimmed
+
+    original_duration = original["end_time"] - original["start_time"]
+    fits_max = original_duration > 0 and original_duration <= max_clip_duration
+    fits_min = min_clip_duration is None or original_duration >= min_clip_duration
+    if fits_max and fits_min:
+        return dict(original)
+    return snapped
+
+
 def snap_clip_to_sentences(
     clip: Dict,
     sentences_info: Sequence[Dict],
+    min_clip_duration: Optional[float] = None,
+    max_clip_duration: Optional[float] = None,
 ) -> Dict:
     """
     クリップの開始・終了を最も近い文境界へスナップする。
+
+    開始時刻が文と文の無音ギャップにあるときは次の文頭へ進め、
+    終了時刻がギャップにあるときは前の文末へ戻す。スナップで
+    ``max_clip_duration`` を超える場合は、フック側（先頭）を優先して縮める。
 
     Parameters
     ----------
@@ -256,6 +410,10 @@ def snap_clip_to_sentences(
         start_time / end_time を持つクリップ
     sentences_info: Sequence[dict]
         文情報リスト
+    min_clip_duration: float or None
+        縮めたあとも維持したい最小尺。None なら制限しない
+    max_clip_duration: float or None
+        この秒数を超えないよう文境界で縮める。None なら制限しない
 
     Returns
     -------
@@ -265,40 +423,21 @@ def snap_clip_to_sentences(
     if not sentences_info:
         return dict(clip)
 
-    snapped = dict(clip)
     start_time = clip["start_time"]
     end_time = clip["end_time"]
-
-    start_sent = min(
-        sentences_info,
-        key=lambda s: abs((s.get("start_time") or 0.0) - start_time),
-    )
-    end_sent = min(
-        sentences_info,
-        key=lambda s: abs((s.get("end_time") or 0.0) - end_time),
-    )
-
-    # 開始は「その時刻以前の文頭」、終了は「その時刻以降の文末」を優先
-    earlier_or_eq = [
-        s for s in sentences_info if (s.get("start_time") or 0.0) <= start_time + 0.05
-    ]
-    if earlier_or_eq:
-        start_sent = earlier_or_eq[-1]
-
-    later_or_eq = [
-        s for s in sentences_info if (s.get("end_time") or 0.0) >= end_time - 0.05
-    ]
-    if later_or_eq:
-        end_sent = later_or_eq[0]
-
-    if start_sent.get("start_time", 0) >= end_sent.get("end_time", 0):
+    start_sent = _pick_start_sentence(sentences_info, start_time)
+    end_sent = _pick_end_sentence(sentences_info, end_time)
+    snapped = _apply_sentence_span(clip, start_sent, end_sent)
+    if snapped is None:
         return dict(clip)
 
-    snapped["start_time"] = float(start_sent["start_time"])
-    snapped["end_time"] = float(end_sent["end_time"])
-    snapped["start_char"] = int(start_sent["start_char"])
-    snapped["end_char"] = int(end_sent["end_char"])
-    return snapped
+    return _trim_snapped_to_duration(
+        snapped,
+        clip,
+        sentences_info,
+        min_clip_duration,
+        max_clip_duration,
+    )
 
 
 def rank_and_suppress(
@@ -339,8 +478,15 @@ def rank_and_suppress(
         duration = end - start
         if duration < min_clip_duration or duration > max_clip_duration:
             continue
-        start_char = max(0, int(clip.get("start_char", 0)))
-        end_char = min(len(transcription_text), int(clip.get("end_char", 0)))
+        raw_start_char = clip.get("start_char")
+        raw_end_char = clip.get("end_char")
+        if raw_start_char is None or raw_end_char is None:
+            continue
+        try:
+            start_char = max(0, int(raw_start_char))
+            end_char = min(len(transcription_text), int(raw_end_char))
+        except (TypeError, ValueError):
+            continue
         if end_char <= start_char:
             continue
         text = transcription_text[start_char:end_char]

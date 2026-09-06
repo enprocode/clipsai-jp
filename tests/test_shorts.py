@@ -150,6 +150,140 @@ def test_snap_clip_to_sentence_boundaries():
     assert snapped["end_char"] == sents[1]["end_char"]
 
 
+def test_snap_does_not_cross_silence_gap_into_previous_topic():
+    """無音ギャップ上の開始は次の文頭へ。前トピックまで戻さない。"""
+    sents = [
+        {
+            "sentence": "前の話題です。",
+            "start_time": 0.0,
+            "end_time": 10.0,
+            "start_char": 0,
+            "end_char": 8,
+        },
+        {
+            "sentence": "次の話題のフックです。",
+            "start_time": 20.0,
+            "end_time": 30.0,
+            "start_char": 8,
+            "end_char": 20,
+        },
+    ]
+    clip = {
+        "start_time": 15.0,
+        "end_time": 28.0,
+        "start_char": 8,
+        "end_char": 18,
+    }
+    snapped = snap_clip_to_sentences(clip, sents)
+    assert snapped["start_time"] == 20.0
+    assert snapped["end_time"] == 30.0
+    assert snapped["start_char"] == 8
+    assert snapped["end_char"] == 20
+
+
+def test_snap_trims_when_sentence_expansion_exceeds_max():
+    """文境界スナップで最大尺を超えたら、先頭を残して縮める。"""
+    sents = [
+        {
+            "sentence": "フック。",
+            "start_time": 0.0,
+            "end_time": 8.0,
+            "start_char": 0,
+            "end_char": 4,
+        },
+        {
+            "sentence": "本論です。",
+            "start_time": 8.0,
+            "end_time": 50.0,
+            "start_char": 4,
+            "end_char": 9,
+        },
+        {
+            "sentence": "補足です。",
+            "start_time": 50.0,
+            "end_time": 70.0,
+            "start_char": 9,
+            "end_char": 14,
+        },
+    ]
+    # 2.0-58.0 (56秒) をスナップすると 0-70 (70秒) になり max=60 を超える
+    clip = {
+        "start_time": 2.0,
+        "end_time": 58.0,
+        "start_char": 1,
+        "end_char": 12,
+    }
+    snapped = snap_clip_to_sentences(
+        clip, sents, min_clip_duration=10, max_clip_duration=60
+    )
+    assert snapped["start_time"] == 0.0
+    assert snapped["end_time"] == 50.0
+    assert 10 <= snapped["end_time"] - snapped["start_time"] <= 60
+    assert snapped["start_char"] == 0
+    assert snapped["end_char"] == 9
+
+
+def test_rank_keeps_clip_after_snap_would_have_exceeded_max():
+    """スナップ後に尺オーバーした候補を捨てず、縮めて残す。"""
+    sents = [
+        {
+            "sentence": "なぜPythonなのか。",
+            "start_time": 0.0,
+            "end_time": 10.0,
+            "start_char": 0,
+            "end_char": 12,
+        },
+        {
+            "sentence": "文法が簡単だからです。",
+            "start_time": 10.0,
+            "end_time": 55.0,
+            "start_char": 12,
+            "end_char": 24,
+        },
+        {
+            "sentence": "補足の説明です。",
+            "start_time": 55.0,
+            "end_time": 72.0,
+            "start_char": 24,
+            "end_char": 32,
+        },
+    ]
+    text = "なぜPythonなのか。文法が簡単だからです。補足の説明です。"
+    raw = {
+        "start_time": 3.0,
+        "end_time": 58.0,
+        "start_char": 2,
+        "end_char": 26,
+    }
+    snapped = snap_clip_to_sentences(
+        raw, sents, min_clip_duration=15, max_clip_duration=60
+    )
+    kept = rank_and_suppress([snapped], text, 15, 60)
+    assert len(kept) == 1
+    assert kept[0]["end_time"] - kept[0]["start_time"] <= 60
+
+
+def test_rank_and_suppress_skips_none_char_indices():
+    text = "テストです。"
+    clips = [
+        {
+            "start_time": 0.0,
+            "end_time": 20.0,
+            "start_char": None,
+            "end_char": None,
+        },
+        {
+            "start_time": 0.0,
+            "end_time": 20.0,
+            "start_char": 0,
+            "end_char": len(text),
+        },
+    ]
+    kept = rank_and_suppress(clips, text, 10, 60)
+    assert len(kept) == 1
+    assert kept[0]["start_char"] == 0
+
+
 def test_clip_finder_defaults_to_japanese_embedding():
     finder = ClipFinder(device="cpu")
     assert finder._embedding_model == "japanese"
