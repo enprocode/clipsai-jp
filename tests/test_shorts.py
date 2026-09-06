@@ -10,6 +10,8 @@ import torch
 from clipsai_jp.clip.clipfinder import ClipFinder
 from clipsai_jp.clip.gemini_clipfinder import GeminiClipFinder
 from clipsai_jp.clip.shorts import (
+    MAX_GENERATED_WINDOWS,
+    OPENING_PRIORITY_START,
     clip_iou,
     generate_sentence_windows,
     is_shorts_mode,
@@ -65,6 +67,34 @@ def test_generate_sentence_windows_respects_duration():
     for w in windows:
         dur = w["end_time"] - w["start_time"]
         assert 12 <= dur <= 24
+
+
+def test_generate_sentence_windows_is_bounded_for_long_transcripts():
+    """長尺・細かい文分割でも候補辞書を上限以内に抑える。"""
+    sentences = []
+    t = 0.0
+    char = 0
+    for i in range(4000):
+        text = f"文{i}。"
+        sentences.append(
+            {
+                "sentence": text,
+                "start_time": t,
+                "end_time": t + 0.5,
+                "start_char": char,
+                "end_char": char + len(text),
+            }
+        )
+        t += 0.5
+        char += len(text)
+    windows = generate_sentence_windows(sentences, 10, 60)
+    assert windows
+    assert len(windows) <= MAX_GENERATED_WINDOWS
+    assert any(w["start_time"] <= OPENING_PRIORITY_START for w in windows)
+    last_quarter = sentences[-1]["end_time"] * 0.75
+    assert any(w["start_time"] >= last_quarter for w in windows)
+    for w in windows:
+        assert 10 <= w["end_time"] - w["start_time"] <= 60
 
 
 def test_score_prefers_hook_over_cta():

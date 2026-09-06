@@ -9,8 +9,9 @@ TextTiling はトピック境界の検出に強い一方、YouTube Shorts のよ
 from __future__ import annotations
 
 import logging
+import math
 import re
-from typing import Dict, List, Optional, Sequence
+from typing import Dict, List, Optional, Sequence, Tuple
 
 logger = logging.getLogger(__name__)
 
@@ -22,6 +23,10 @@ SHORTS_DEFAULT_MAX_CLIPS = 8
 # YouTube Shorts / Reels で視聴維持しやすい尺
 SWEET_SPOT_MIN = 25.0
 SWEET_SPOT_MAX = 45.0
+SWEET_SPOT_TARGET = (SWEET_SPOT_MIN + SWEET_SPOT_MAX) / 2.0
+# 文連続ウィンドウの上限。全組み合わせを実体化すると長尺で数百万件になる
+MAX_GENERATED_WINDOWS = 512
+MAX_OPENING_WINDOWS = 64
 
 # 冒頭フックを優先確保する開始時刻の上限（秒）
 OPENING_PRIORITY_START = 15.0
@@ -99,6 +104,94 @@ def is_shorts_mode(clip_style: str, max_clip_duration: float) -> bool:
     return max_clip_duration <= SHORTS_DURATION_THRESHOLD
 
 
+def _window_pre_score(start_time: float, duration: float) -> float:
+    """尺と冒頭位置だけで候補を間引くための軽量スコア。"""
+    if SWEET_SPOT_MIN <= duration <= SWEET_SPOT_MAX:
+        duration_score = 1.2
+    else:
+        if duration < SWEET_SPOT_MIN:
+            dist = SWEET_SPOT_MIN - duration
+        else:
+            dist = duration - SWEET_SPOT_MAX
+        duration_score = max(0.2, 1.0 - dist / 30.0)
+    opening = 0.0
+    if start_time <= OPENING_PRIORITY_START:
+        recency = max(0.0, 1.0 - start_time / OPENING_PRIORITY_START)
+        opening = 0.5 + 1.0 * recency
+    return duration_score + opening
+
+
+def _representative_end_indices(
+    sentences_info: Sequence[Dict],
+    start_index: int,
+    start_time: float,
+    min_clip_duration: float,
+    max_clip_duration: float,
+) -> List[int]:
+    """1つの開始文につき、尺の代表点（スイートスポットと端）だけ返す。"""
+    first_j: Optional[int] = None
+    last_j: Optional[int] = None
+    best_sweet_j: Optional[int] = None
+    best_sweet_dist: Optional[float] = None
+    target_end = start_time + SWEET_SPOT_TARGET
+    n = len(sentences_info)
+    for j in range(start_index, n):
+        end_time = sentences_info[j].get("end_time")
+        end_char = sentences_info[j].get("end_char")
+        if end_time is None or end_char is None:
+            continue
+        duration = end_time - start_time
+        if duration < min_clip_duration:
+            continue
+        if duration > max_clip_duration:
+            break
+        if first_j is None:
+            first_j = j
+        last_j = j
+        dist = abs(float(end_time) - target_end)
+        if best_sweet_j is None or dist < best_sweet_dist:
+            best_sweet_j = j
+            best_sweet_dist = dist
+    if best_sweet_j is None:
+        return []
+    chosen = {best_sweet_j}
+    if first_j is not None and last_j is not None and first_j != last_j:
+        first_end = float(sentences_info[first_j]["end_time"])
+        last_end = float(sentences_info[last_j]["end_time"])
+        sweet_end = float(sentences_info[best_sweet_j]["end_time"])
+        if abs(first_end - sweet_end) >= abs(last_end - sweet_end):
+            chosen.add(first_j)
+        else:
+            chosen.add(last_j)
+    return list(chosen)
+
+
+def _select_bounded_pairs(
+    pairs: List[Tuple[float, float, int, int]],
+    limit: int,
+) -> List[Tuple[float, float, int, int]]:
+    """冒頭を残しつつ、開始時刻で層化して件数を上限以内にする。"""
+    if len(pairs) <= limit:
+        return pairs
+    opening = [p for p in pairs if p[1] <= OPENING_PRIORITY_START]
+    rest = [p for p in pairs if p[1] > OPENING_PRIORITY_START]
+    n_opening = min(len(opening), MAX_OPENING_WINDOWS, limit)
+    opening.sort(key=lambda p: p[0], reverse=True)
+    selected = opening[:n_opening]
+    remaining = limit - len(selected)
+    if remaining <= 0 or not rest:
+        return selected
+    rest.sort(key=lambda p: p[1])
+    chunk_size = max(1, math.ceil(len(rest) / remaining))
+    for offset in range(0, len(rest), chunk_size):
+        group = rest[offset : offset + chunk_size]
+        if group:
+            selected.append(max(group, key=lambda p: p[0]))
+        if len(selected) >= limit:
+            break
+    return selected[:limit]
+
+
 def generate_sentence_windows(
     sentences_info: Sequence[Dict],
     min_clip_duration: float,
@@ -106,6 +199,9 @@ def generate_sentence_windows(
 ) -> List[Dict]:
     """
     連続する文から、指定尺に収まるクリップ候補を列挙する。
+
+    開始文ごとに全終了文を実体化せず、尺の代表点だけを残し、
+    さらに ``MAX_GENERATED_WINDOWS`` 件へ間引く（冒頭と時間方向の多様性を維持）。
 
     Parameters
     ----------
@@ -122,34 +218,47 @@ def generate_sentence_windows(
         start_time / end_time / start_char / end_char を持つ候補リスト
     """
     n = len(sentences_info)
-    windows: List[Dict] = []
     if n == 0:
-        return windows
+        return []
 
+    pairs: List[Tuple[float, float, int, int]] = []
     for i in range(n):
         start_time = sentences_info[i].get("start_time")
         start_char = sentences_info[i].get("start_char")
         if start_time is None or start_char is None:
             continue
-        for j in range(i, n):
-            end_time = sentences_info[j].get("end_time")
-            end_char = sentences_info[j].get("end_char")
-            if end_time is None or end_char is None:
-                continue
-            duration = end_time - start_time
-            if duration < min_clip_duration:
-                continue
-            if duration > max_clip_duration:
-                break
-            windows.append(
-                {
-                    "start_time": float(start_time),
-                    "end_time": float(end_time),
-                    "start_char": int(start_char),
-                    "end_char": int(end_char),
-                    "source": "window",
-                }
+        start_time_f = float(start_time)
+        for j in _representative_end_indices(
+            sentences_info,
+            i,
+            start_time_f,
+            min_clip_duration,
+            max_clip_duration,
+        ):
+            end_time = float(sentences_info[j]["end_time"])
+            duration = end_time - start_time_f
+            pairs.append(
+                (
+                    _window_pre_score(start_time_f, duration),
+                    start_time_f,
+                    i,
+                    j,
+                )
             )
+
+    windows: List[Dict] = []
+    for _, _, i, j in _select_bounded_pairs(pairs, MAX_GENERATED_WINDOWS):
+        start_time = float(sentences_info[i]["start_time"])
+        end_time = float(sentences_info[j]["end_time"])
+        windows.append(
+            {
+                "start_time": start_time,
+                "end_time": end_time,
+                "start_char": int(sentences_info[i]["start_char"]),
+                "end_char": int(sentences_info[j]["end_char"]),
+                "source": "window",
+            }
+        )
     return windows
 
 
