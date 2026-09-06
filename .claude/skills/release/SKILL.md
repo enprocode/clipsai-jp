@@ -18,13 +18,13 @@ description: clipsai-jp の新バージョンを PyPI に公開する手順と�
 マージ後は GitHub Actions が自動で:
 
 - **Tests 成功 → TestPyPI に公開**（`python-publish-testpypi.yml`。既存バージョンならスキップ）
-- **Tests 成功 → GitHub Release を自動作成 → 本番 PyPI に公開**（`python-publish.yml`。`v<VERSION>` の Release が無ければ作成し、`pypi` 環境で trusted publishing。既存バージョンはスキップ）
+- **Tests 成功 → GitHub Release を自動作成 → 本番 PyPI に公開**（`python-publish.yml`。`VERSION` と同じタグの Release が無ければ作成し、`pypi` 環境で trusted publishing。既存バージョンはスキップ）
 
 つまり手動での `twine upload` や GitHub Release 作成は不要。
 
 ## 手動リリース（必要時のみ）
 
-GitHub UI で `v<VERSION>` タグの Release を作成すると `python-publish.yml` の `release: published` 経路が発火し、タグと `VERSION` の一致を検証して公開する。
+GitHub UI で `<VERSION>` タグの Release を作成すると `python-publish.yml` の `release: published` 経路が発火し、タグと `VERSION` の一致を検証して公開する。
 
 ## 安全弁
 
@@ -33,4 +33,4 @@ GitHub UI で `v<VERSION>` タグの Release を作成すると `python-publish.
 ## 公開後の確認
 
 - `pip install clipsai-jp==<新バージョン>` で本番インストール確認
-- GitHub の Releases に `v<新バージョン>` が作成されていること
+- GitHub の Releases に `<新バージョン>` タグ（例 `1.0.8`）が作成されていること

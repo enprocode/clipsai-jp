@@ -75,7 +75,7 @@ jobs:
         run: |
           set -e
           VERSION=$(tr -d '[:space:]' < VERSION)
-          TAG="v$VERSION"
+          TAG="$VERSION"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "VERSION file: $VERSION (target: $TARGET_REF)"
 
@@ -92,7 +92,8 @@ jobs:
           if [ "${{ github.event_name }}" = "release" ]; then
             # 手動リリース: タグと VERSION の一致を検証
             REL_TAG="${{ github.event.release.tag_name }}"
-            if [ "${REL_TAG#v}" != "$VERSION" ]; then
+            # タグは VERSION と同一（旧 v 付きタグも後方互換で許可）
+            if [ "$REL_TAG" != "$VERSION" ] && [ "${REL_TAG#v}" != "$VERSION" ]; then
               echo "Error: release tag '$REL_TAG' does not match VERSION '$VERSION'"
               exit 1
             fi

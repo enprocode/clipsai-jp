@@ -88,6 +88,6 @@ printf 'dicdir = %s\n' "$(.venv/bin/python -c 'import unidic_lite; print(unidic_
 - バージョンはリポジトリ直下の **`VERSION` ファイルで一元管理**（setup.py・CI・`clipsai_jp.__version__` すべてここから読む）。リリース時は `VERSION` と `CHANGELOG.md` のみ更新する
 - バージョンは一意（同一バージョンの再アップロード不可）
 - ブランチ運用: バージョンブランチ（例 `v1.0.6`）→ PR → main マージ
-- **リリースは全自動**: `VERSION` を上げて main にマージ → Tests 成功後に TestPyPI 公開、さらに GitHub Release（`v<VERSION>`）の自動作成 → 本番 PyPI 公開（`python-publish.yml`）。いずれも既存バージョンはスキップ（冪等）。手動の twine upload や Release 作成は不要
+- **リリースは全自動**: `VERSION` を上げて main にマージ → Tests 成功後に TestPyPI 公開、さらに GitHub Release（タグは `VERSION` そのもの、例 `1.0.8`）の自動作成 → 本番 PyPI 公開（`python-publish.yml`）。いずれも既存バージョンはスキップ（冪等）。手動の twine upload や Release 作成は不要
 - 本番公開を手動承認にしたい場合は `pypi` 環境に Required reviewers を設定する
 - 詳細は `release` スキル参照
