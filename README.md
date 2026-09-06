@@ -40,9 +40,9 @@ pip install clipsai-jp
 
 | プロバイダ | 環境変数 | デフォルトモデル |
 |---|---|---|
-| OpenAI | `OPENAI_API_KEY` | `gpt-4o-mini` |
-| Anthropic | `ANTHROPIC_API_KEY` | `claude-sonnet-4-5` |
-| Gemini | `GEMINI_API_KEY` | `gemini-2.5-flash` |
+| OpenAI | `OPENAI_API_KEY` | `gpt-5.6-terra` |
+| Anthropic | `ANTHROPIC_API_KEY` | `claude-sonnet-5` |
+| Gemini | `GEMINI_API_KEY` | `gemini-3.8-flash` |
 | OpenAI互換 | `LLM_API_KEY`（ローカルなら不要） | `llm_model` 必須 |
 
 ```python
@@ -51,7 +51,7 @@ from clipsai_jp import ClipFinder
 clipfinder = ClipFinder(
     use_llm=True,
     llm_provider="openai",  # openai / anthropic / gemini / openai_compatible
-    llm_model="gpt-4o-mini",
+    llm_model="gpt-5.6-terra",
     llm_priority=0.7,
 )
 ```

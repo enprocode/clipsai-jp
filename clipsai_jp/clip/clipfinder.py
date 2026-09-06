@@ -50,7 +50,7 @@ class ClipFinder:
         embedding_model: str = "japanese",
         use_gemini: bool = False,
         gemini_api_key: str = None,
-        gemini_model: str = "gemini-2.5-flash",
+        gemini_model: str = "gemini-3.8-flash",
         gemini_priority: float = 0.5,
         clip_style: str = "auto",
         max_clips: int = None,
