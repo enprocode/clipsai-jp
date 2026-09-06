@@ -229,49 +229,85 @@ clipfinder = ClipFinder(
 - `clip_style` (デフォルト: `"auto"`): `"auto"` は `max_clip_duration<=90` のときショート向け（文連続候補・フック評価・重複抑制）。`"shorts"` で常にショート向け、`"longform"` で従来の TextTiling のみ
 - `max_clips` (デフォルト: None): ショート向け処理で返す最大件数。未指定なら 8 件。`0` で重複抑制後の全件
 
-**Gemini APIを使用して精度を向上させる場合:**
+**LLM APIを使用して精度を向上させる場合:**
 
-GoogleのGemini APIを使用することで、より高度なセマンティック理解に基づいたトピックセグメンテーションが可能になります。特に日本語コンテンツでのクリップ検出精度が向上します。
+TextTiling（埋め込みの類似度で境界を切る）に加えて、任意の LLM にトピック境界を提案させると、日本語の意味の切れ目をより自然に取れます。Gemini 専用ではなく、OpenAI / Anthropic / Gemini / OpenAI互換サーバから選べます。
 
 ```python
-import os
-
-# 環境変数 GEMINI_API_KEY を設定（推奨）
-# export GEMINI_API_KEY="your_api_key_here"  # Linux/Mac
-# $env:GEMINI_API_KEY="your_api_key_here"     # Windows PowerShell
-
-# Gemini APIを使用した高精度なクリップ検出
+# OpenAI（例）
 clipfinder = ClipFinder(
     min_clip_duration=10,
     max_clip_duration=60,
     cutoff_policy="average",
     embedding_model="japanese",
-    use_gemini=True,  # Gemini APIを使用
-    gemini_api_key=os.getenv("GEMINI_API_KEY"),  # 環境変数から取得（推奨）
-    gemini_model="gemini-2.5-flash",  # または "gemini-2.5-pro"（高精度）
-    gemini_priority=0.7,  # Geminiの提案を70%重視（0.0=TextTilingのみ, 1.0=Geminiのみ）
+    use_llm=True,
+    llm_provider="openai",  # openai / anthropic / gemini / openai_compatible
+    llm_model="gpt-4o-mini",  # 高精度なら "gpt-4o"
+    llm_priority=0.7,  # 0.0=TextTilingのみ, 1.0=LLMのみ
 )
+
+# Anthropic
+# clipfinder = ClipFinder(
+#     ...,
+#     use_llm=True,
+#     llm_provider="anthropic",
+#     llm_model="claude-sonnet-4-5",
+# )
+
+# ローカル LLM（Ollama など OpenAI 互換）
+# clipfinder = ClipFinder(
+#     ...,
+#     use_llm=True,
+#     llm_provider="openai_compatible",
+#     llm_model="llama3",
+#     llm_base_url="http://localhost:11434/v1",
+# )
 ```
 
-**Gemini APIパラメータの説明:**
-- `use_gemini` (デフォルト: False): Gemini APIを使用するかどうか
-- `gemini_api_key` (デフォルト: None): Gemini APIキー。Noneの場合は環境変数 `GEMINI_API_KEY` から取得
-- `gemini_model` (デフォルト: "gemini-2.5-flash"): 使用するGeminiモデル
-  - `"gemini-2.5-flash"`: 推奨、高速
-  - `"gemini-2.5-pro"`: 高精度、処理時間が長い
-- `gemini_priority` (デフォルト: 0.5): Geminiの提案の重み（0.0-1.0）
-  - `0.0`: TextTilingのみを使用
-  - `0.5`: TextTilingとGeminiの提案を均等に重視
-  - `1.0`: Geminiのみを使用
+**LLM パラメータ:**
+- `use_llm` (デフォルト: False): LLM でクリップ境界を補助するかどうか
+- `llm_provider`: `"openai"` / `"anthropic"` / `"gemini"` / `"openai_compatible"`
+- `llm_api_key` (デフォルト: None): APIキー。未指定時は環境変数から取得（後述）
+- `llm_model`: モデル名。未指定時のデフォルトは
+  - openai: `gpt-4o-mini`
+  - anthropic: `claude-sonnet-4-5`
+  - gemini: `gemini-2.5-flash`
+- `llm_base_url`: API のベースURL。`openai_compatible` では必須
+- `llm_priority` (デフォルト: 0.5): LLM提案の重み（0.0-1.0）
+  - `0.0`: TextTilingのみ
+  - `0.7`: LLMをやや重視（推奨の出発点）
+  - `1.0`: LLMのみ
 
-**Gemini APIキーの取得方法:**
-1. [Google AI Studio](https://aistudio.google.com/app/apikey)にアクセス
-2. 「APIキーを作成」をクリック
-3. 生成されたAPIキーをコピー
+`use_gemini=True` と `gemini_*` は非推奨の互換エイリアスです。内部では `use_llm=True, llm_provider="gemini"` に変換されます。
 
-**Gemini APIキーの設定方法:**
+**精度を上げる順番（効果の大きい順）:**
 
-【方法1】.envファイルを使用（推奨）
+1. **LLM 補助を使う**（上記）。意味の切れ目・フック・自己完結を LLM が見る
+2. **強いモデルを選ぶ**（`gpt-4o` / `claude-sonnet-4-5` / `gemini-2.5-pro`）。flash/mini より境界の自然さが上がる一方、遅い・高い
+3. **埋め込みを上げる**: `embedding_model="high_accuracy"` または `"large"`（TextTiling 側の境界精度）
+4. **MeCab を入れる**: 日本語の文境界が正しくなる（クリップが文の途中で切れない）
+5. **`llm_priority` を 0.6〜0.8 にする**: TextTiling の安定性と LLM の意味理解を混ぜる
+6. **ショートなら `clip_style="shorts"`**（または `max_clip_duration<=90`）: フック評価と重複抑制が乗る
+
+**APIキーの扱い:**
+
+ライブラリはキーをハードコードしません。取得順は次のとおりです。
+
+1. 引数 `llm_api_key=...`（または旧APIの `gemini_api_key`）
+2. プロバイダ専用の環境変数
+3. 共通フォールバック `LLM_API_KEY`
+4. それでも無い場合: `ClipFinder` は警告を出して LLM をオフにし、TextTiling のみで動作する
+
+| プロバイダ | 環境変数 | HTTP への載せ方 |
+|---|---|---|
+| OpenAI | `OPENAI_API_KEY` | `Authorization: Bearer ...` |
+| Anthropic | `ANTHROPIC_API_KEY` | `x-api-key` |
+| Gemini | `GEMINI_API_KEY` | `x-goog-api-key` |
+| OpenAI互換（Ollama 等） | `LLM_API_KEY`（任意） | キーがあれば Bearer。ローカルならキーなしで可 |
+
+`clipsai_jp` 本体は `.env` を読み込みません。環境変数をセットするか、サンプルのように `python-dotenv` で読み込んでください。ログにはプロバイダ名とモデル名だけ出し、キーは出しません。API 呼び出しに失敗した場合も TextTiling にフォールバックします。
+
+【方法1】.envファイルを使用（サンプル向け・推奨）
 
 `.env`ファイルを使用することで、APIキーをコードから分離して管理できます。
 
@@ -281,11 +317,11 @@ clipfinder = ClipFinder(
 cp sample/.env.example sample/.env
 ```
 
-2. `sample/.env` を開き、各値を自分のキーに書き換える:
+2. `sample/.env` を開き、**使うプロバイダのキーだけ**書き換える:
 
 ```bash
 # .env
-GEMINI_API_KEY=your_actual_api_key_here
+OPENAI_API_KEY=your_actual_api_key_here
 # リサイズ機能を使う場合は Hugging Face トークンも設定
 HF_TOKEN=your_actual_huggingface_token_here
 ```
@@ -296,7 +332,7 @@ HF_TOKEN=your_actual_huggingface_token_here
 pip install python-dotenv
 ```
 
-4. サンプルコードでは、`.env`ファイルから自動的に環境変数を読み込みます:
+4. `sample/clip_video.py` などは `.env` を自動読み込みします:
 
 ```python
 # .envファイルから環境変数を読み込む（オプション）
@@ -309,29 +345,39 @@ except ImportError:
     pass
 ```
 
-**注意:** `.env`ファイルは`.gitignore`に含まれているため、リポジトリにコミットされません。セキュリティのため、実際のAPIキーをコードに直接記述しないでください。
+**注意:** `.env`ファイルは`.gitignore`に含まれているため、リポジトリにコミットされません。実際のAPIキーをコードに直接記述しないでください。
 
 【方法2】環境変数として直接設定
 
-システムの環境変数として設定する方法です。
-
 **Linux/Mac:**
 ```bash
-export GEMINI_API_KEY="your_api_key_here"
+export OPENAI_API_KEY="your_api_key_here"
+# または: ANTHROPIC_API_KEY / GEMINI_API_KEY
 ```
 
 **Windows PowerShell:**
 ```powershell
-$env:GEMINI_API_KEY="your_api_key_here"
+$env:OPENAI_API_KEY="your_api_key_here"
 ```
 
 **Windows コマンドプロンプト:**
 ```cmd
-set GEMINI_API_KEY=your_api_key_here
+set OPENAI_API_KEY=your_api_key_here
 ```
 
-**注意:** 
-- Gemini APIはオプショナル機能です。APIキーが設定されていない場合や、API呼び出しに失敗した場合でも、TextTilingアルゴリズムのみで動作します。
+【方法3】引数で渡す（非推奨。ソースやログに残りやすい）
+
+```python
+clipfinder = ClipFinder(
+    use_llm=True,
+    llm_provider="openai",
+    llm_api_key=os.environ["OPENAI_API_KEY"],
+)
+```
+
+**注意:**
+- LLM 補助はオプショナルです（`use_llm` のデフォルトは False）。キーが無い、または API 呼び出しに失敗した場合でも TextTiling のみで動作します。
+- `sample/clip_video.py` はデモとして `use_llm=True, llm_provider="openai"` になっているため、動かすには `OPENAI_API_KEY` が必要です（未設定なら TextTiling のみ）。
 - MeCabもオプショナル機能です。MeCabがインストールされていない場合、自動的にNLTKにフォールバックします。ただし、MeCabをインストールすることで、日本語の文分割精度が向上し、より自然な動画分割が可能になります。
 
 **MeCabによる日本語文分割（自動使用）:**
@@ -357,7 +403,7 @@ ClipsAI-JPは、日本語の文字起こしに対して自動的にMeCabを使�
 - より短いクリップが必要な場合: `min_clip_duration`を5-10秒程度に設定してください
 - 日本語動画の精度を向上させたい場合: `embedding_model="japanese"`を指定してください
 - より高精度な検出が必要な場合: `embedding_model="high_accuracy"`または`"large"`を指定してください（処理時間が長くなります）
-- クリップ検出精度を最大限に向上させたい場合: `use_gemini=True`を指定してGemini APIを使用してください
+- クリップ検出精度を最大限に向上させたい場合: `use_llm=True` で LLM を併用してください
 - 日本語の文分割が不自然な場合: MeCabをインストールすることで、より自然な文分割が可能になります（自動的に使用されます）
 
 ### 2. `sample/resize_video.py`

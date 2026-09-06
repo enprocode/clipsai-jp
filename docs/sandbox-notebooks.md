@@ -50,6 +50,13 @@ export PYANNOTE_AUTH_TOKEN="your_token_here"
 
 トークンの取得方法: [Pyannote HuggingFace](https://huggingface.co/pyannote/speaker-diarization-3.0#requirements)
 
+クリップ検出で LLM を使う場合は、プロバイダの API キーも環境変数で渡します（コードに書かないこと）。詳細は [`docs/sample-code.md`](sample-code.md) の「APIキーの扱い」を参照してください。
+
+```bash
+export OPENAI_API_KEY="your_openai_api_key_here"
+# または ANTHROPIC_API_KEY / GEMINI_API_KEY
+```
+
 ## ノートブックファイル一覧
 
 ### 1. `clipsai.ipynb`

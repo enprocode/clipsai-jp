@@ -41,7 +41,7 @@ printf 'dicdir = %s\n' "$(.venv/bin/python -c 'import unidic_lite; print(unidic_
 
 1. **`transcribe/transcriber.py`** — faster-whisper で文字起こしし、単語タイムスタンプから**文字単位のタイムスタンプ（char_info）を合成**する。char_info がこのライブラリ全体の一次データ
 2. **`transcribe/transcription.py`** — char_info から word_info / sentence_info を派生構築。言語が `ja` なら `JapaneseSentenceSplitter`（MeCab）で文分割、失敗時は NLTK にフォールバック。時間→インデックス変換（`find_char_index` 等）は二分探索
-3. **`clip/clipfinder.py`** — 文の埋め込み（sentence-transformers）に対して TextTiling を複数の窓幅 k で繰り返し、クリップ境界を検出。`use_gemini=True` なら `gemini_clipfinder.py` の提案と重み付きマージ
+3. **`clip/clipfinder.py`** — 文の埋め込み（sentence-transformers）に対して TextTiling を複数の窓幅 k で繰り返し、クリップ境界を検出。`use_llm=True` なら `llm_clipfinder.py` の提案（OpenAI / Anthropic / Gemini / OpenAI互換）と重み付きマージ
 4. **`resize/resizer.py`** — pyannote（話者分離）+ mediapipe（顔検出）+ scenedetect で 9:16 等へのリサイズ用クロップを決定
 5. **`media/editor.py`** — ffmpeg ベースの切り出し・変換
 
