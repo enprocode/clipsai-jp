@@ -126,33 +126,44 @@ def test_openai_compatible_allows_missing_api_key():
     assert finder.api_key is None
 
 
+def test_default_models_are_current():
+    finder_openai = LlmClipFinder(provider="openai", api_key="k")
+    finder_anthropic = LlmClipFinder(provider="anthropic", api_key="k")
+    finder_gemini = LlmClipFinder(provider="gemini", api_key="k")
+    assert finder_openai.model_name == "gpt-5.6-terra"
+    assert finder_anthropic.model_name == "claude-sonnet-5"
+    assert finder_gemini.model_name == "gemini-3.8-flash"
+
+
 def test_openai_request_uses_chat_completions():
-    finder = LlmClipFinder(provider="openai", api_key="sk-test", model="gpt-4o-mini")
+    finder = LlmClipFinder(provider="openai", api_key="sk-test", model="gpt-5.6-terra")
     url, headers, payload = finder._build_request("hello")
     assert url.endswith("/chat/completions")
     assert headers["Authorization"] == "Bearer sk-test"
-    assert payload["model"] == "gpt-4o-mini"
+    assert payload["model"] == "gpt-5.6-terra"
     assert payload["messages"][0]["content"] == "hello"
 
 
 def test_anthropic_request_uses_messages_api():
     finder = LlmClipFinder(
-        provider="anthropic", api_key="ant-test", model="claude-sonnet-4-5"
+        provider="anthropic", api_key="ant-test", model="claude-sonnet-5"
     )
     url, headers, payload = finder._build_request("hello")
     assert url.endswith("/v1/messages")
     assert headers["x-api-key"] == "ant-test"
-    assert payload["model"] == "claude-sonnet-4-5"
+    assert payload["model"] == "claude-sonnet-5"
+    assert "temperature" not in payload
 
 
 def test_gemini_request_uses_generate_content():
     finder = LlmClipFinder(
-        provider="gemini", api_key="gem-test", model="gemini-2.5-flash"
+        provider="gemini", api_key="gem-test", model="gemini-3.8-flash"
     )
     url, headers, payload = finder._build_request("hello")
-    assert "models/gemini-2.5-flash:generateContent" in url
+    assert "models/gemini-3.8-flash:generateContent" in url
     assert headers["x-goog-api-key"] == "gem-test"
     assert payload["contents"][0]["parts"][0]["text"] == "hello"
+    assert "temperature" not in payload["generationConfig"]
 
 
 def test_extract_text_openai():
@@ -214,14 +225,14 @@ def test_clipfinder_use_llm_initializes_finder():
             use_llm=True,
             llm_provider="openai",
             llm_api_key="sk-test",
-            llm_model="gpt-4o-mini",
+            llm_model="gpt-5.6-terra",
             llm_priority=0.7,
         )
 
     assert finder._use_llm is True
     assert created["provider"] == "openai"
     assert created["api_key"] == "sk-test"
-    assert created["model"] == "gpt-4o-mini"
+    assert created["model"] == "gpt-5.6-terra"
     assert finder._llm_priority == 0.7
 
 
@@ -242,13 +253,13 @@ def test_clipfinder_use_gemini_maps_to_gemini_provider():
                 device="cpu",
                 use_gemini=True,
                 gemini_api_key="gem-test",
-                gemini_model="gemini-2.5-pro",
+                gemini_model="gemini-3.8-flash",
             )
 
     assert finder._use_llm is True
     assert created["provider"] == "gemini"
     assert created["api_key"] == "gem-test"
-    assert created["model"] == "gemini-2.5-pro"
+    assert created["model"] == "gemini-3.8-flash"
 
 
 def test_clipfinder_legacy_positional_args_still_map_to_use_gemini():

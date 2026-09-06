@@ -16,6 +16,7 @@
 - 新規の `use_llm` / `llm_*` は既存位置引数の後ろのキーワード専用引数（`use_gemini` や `clip_style` の位置互換を維持）
 - `llm_priority=0` のときは LLM API を呼ばない
 - README / `docs/sample-code.md` に LLM プロバイダと API キーの取得順・フォールバックを追記
+- LLM デフォルトモデルを現行 ID に更新（`gpt-5.6-terra` / `claude-sonnet-5` / `gemini-3.8-flash`）
 
 ## [1.0.9] - 2026-09-06
 

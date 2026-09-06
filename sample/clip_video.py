@@ -152,7 +152,7 @@ def main() -> None:
         embedding_model="japanese",
         use_llm=True,
         llm_provider="openai",  # openai / anthropic / gemini / openai_compatible
-        llm_model="gpt-4o-mini",  # 高精度なら gpt-4o や claude-sonnet-4-5
+        llm_model="gpt-5.6-terra",  # 高精度なら gpt-5.6-sol や claude-opus-5
         llm_priority=0.7,  # 0.0=TextTilingのみ, 1.0=LLMのみ
     )
 

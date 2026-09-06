@@ -35,9 +35,9 @@ MAX_OUTPUT_TOKENS = 4096
 SUPPORTED_PROVIDERS = ("openai", "anthropic", "gemini", "openai_compatible")
 
 DEFAULT_MODELS = {
-    "openai": "gpt-4o-mini",
-    "anthropic": "claude-sonnet-4-5",
-    "gemini": "gemini-2.5-flash",
+    "openai": "gpt-5.6-terra",
+    "anthropic": "claude-sonnet-5",
+    "gemini": "gemini-3.8-flash",
     "openai_compatible": None,
 }
 
@@ -330,10 +330,10 @@ class LlmClipFinder:
                 "x-api-key": self.api_key or "",
                 "anthropic-version": "2023-06-01",
             }
+            # Claude Sonnet 5 以降は temperature 等のサンプリング指定が 400 になる
             payload = {
                 "model": self.model_name,
                 "max_tokens": MAX_OUTPUT_TOKENS,
-                "temperature": 0,
                 "messages": [{"role": "user", "content": prompt}],
             }
             return url, headers, payload
@@ -345,8 +345,8 @@ class LlmClipFinder:
             headers["x-goog-api-key"] = self.api_key
         payload = {
             "contents": [{"parts": [{"text": prompt}]}],
+            # Gemini 3.8 以降は temperature が非推奨のため指定しない
             "generationConfig": {
-                "temperature": 0,
                 "maxOutputTokens": MAX_OUTPUT_TOKENS,
             },
         }

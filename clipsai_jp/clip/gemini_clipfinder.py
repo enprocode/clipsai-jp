@@ -36,7 +36,7 @@ class GeminiClipFinder(LlmClipFinder):
     def __init__(
         self,
         api_key: Optional[str] = None,
-        model: str = "gemini-2.5-flash",
+        model: str = "gemini-3.8-flash",
     ) -> None:
         warnings.warn(
             "GeminiClipFinder is deprecated. Use LlmClipFinder("

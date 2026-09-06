@@ -242,7 +242,7 @@ clipfinder = ClipFinder(
     embedding_model="japanese",
     use_llm=True,
     llm_provider="openai",  # openai / anthropic / gemini / openai_compatible
-    llm_model="gpt-4o-mini",  # 高精度なら "gpt-4o"
+    llm_model="gpt-5.6-terra",  # 高精度なら "gpt-5.6-sol"
     llm_priority=0.7,  # 0.0=TextTilingのみ, 1.0=LLMのみ
 )
 
@@ -251,7 +251,7 @@ clipfinder = ClipFinder(
 #     ...,
 #     use_llm=True,
 #     llm_provider="anthropic",
-#     llm_model="claude-sonnet-4-5",
+#     llm_model="claude-sonnet-5",
 # )
 
 # ローカル LLM（Ollama など OpenAI 互換）
@@ -269,9 +269,9 @@ clipfinder = ClipFinder(
 - `llm_provider`: `"openai"` / `"anthropic"` / `"gemini"` / `"openai_compatible"`
 - `llm_api_key` (デフォルト: None): APIキー。未指定時は環境変数から取得（後述）
 - `llm_model`: モデル名。未指定時のデフォルトは
-  - openai: `gpt-4o-mini`
-  - anthropic: `claude-sonnet-4-5`
-  - gemini: `gemini-2.5-flash`
+  - openai: `gpt-5.6-terra`
+  - anthropic: `claude-sonnet-5`
+  - gemini: `gemini-3.8-flash`
 - `llm_base_url`: API のベースURL。`openai_compatible` では必須
 - `llm_priority` (デフォルト: 0.5): LLM提案の重み（0.0-1.0）
   - `0.0`: TextTilingのみ
@@ -283,7 +283,7 @@ clipfinder = ClipFinder(
 **精度を上げる順番（効果の大きい順）:**
 
 1. **LLM 補助を使う**（上記）。意味の切れ目・フック・自己完結を LLM が見る
-2. **強いモデルを選ぶ**（`gpt-4o` / `claude-sonnet-4-5` / `gemini-2.5-pro`）。flash/mini より境界の自然さが上がる一方、遅い・高い
+2. **強いモデルを選ぶ**（`gpt-5.6-sol` / `claude-opus-5`）。デフォルトの terra / sonnet / flash より境界の自然さが上がる一方、遅い・高い
 3. **埋め込みを上げる**: `embedding_model="high_accuracy"` または `"large"`（TextTiling 側の境界精度）
 4. **MeCab を入れる**: 日本語の文境界が正しくなる（クリップが文の途中で切れない）
 5. **`llm_priority` を 0.6〜0.8 にする**: TextTiling の安定性と LLM の意味理解を混ぜる
