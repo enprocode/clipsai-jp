@@ -55,15 +55,25 @@ printf 'dicdir = %s\n' "$(.venv/bin/python -c 'import unidic_lite; print(unidic_
 
 | パッケージ | 制約 | 理由 |
 |---|---|---|
+| Python | `>=3.10` | セキュリティ修正済みの nltk / av / transformers / pillow 等が 3.10 以上を要求 |
 | torch / torchaudio | `<2.9.0` | torchaudio 2.9 で AudioMetaData が削除 |
 | pyannote.audio | `>=3.3.0,<4.0.0` | 4.x は torchcodec>=0.7 を要求し torch<2.9 と ABI 衝突（import 不能） |
 | pyannote.core | `<6.0.0` | pyannote.audio 3.x が pyannote.core<6.0 を要求 |
 | mediapipe | `>=0.10.20,<0.10.30` | 0.10.30 でレガシー solutions API（顔検出で使用）が削除 |
 | numpy | `<2.0.0` | mediapipe が numpy<2 を要求 |
+| av | `>=17.1.0,<18.0.0` | 17.1.0 は CVE-2026-40962 対応の FFmpeg 8.1.1 をバンドル。18.x は Python >=3.11 |
+| nltk | `>=3.10.3,<4.0.0` | 3.10.3 未満には pickle RCE / SSRF / path traversal |
+| transformers | `>=5.16.1,<6.0.0` | 4.x には RCE 等の未修正 CVE。sentence-transformers 5.x は `<6` |
+| protobuf | mediapipe が `<5` | CVE-2026-0994 の修正は protobuf 6.x。mediapipe 0.10.21 が protobuf<5 を要求するため未適用 |
 
 依存を追加・変更する場合は `setup.py` と `requirements.txt` の**両方**を更新する。Dependabot がこれらの上限を超える更新を提案しても解決不能なので、`.github/dependabot.yml` の ignore ルールで抑止済み。
 
-**torch の既知 CVE について（意図的に未対応）**: torch には未修正の CVE が複数ある（CVE-2025-2999 [medium] unpack_sequence / CVE-2025-3001 [low] lstm_cell / CVE-2025-3000 [low] jit.script、修正版なし）。修正版（2.9.1 / 2.10.0）は上記 `torch<2.9` ピンの外側にあり、取り込むには torchaudio 2.9・pyannote.audio 4.x への移行が必要。いずれも「特定の torch 内部関数に未信頼入力を渡せる場合」のローカルなメモリ破損で、本ライブラリの用途（ユーザー自身の動画処理）では実効リスクが低いため tolerable risk として受容している。**torch のピンを外して "CVE を直す" と依存全体が壊れるので注意**。将来 pyannote 4.x へ移行する際にまとめて見直すこと。
+**torch の既知 CVE について（意図的に未対応）**: torch 2.8.x には未修正または 2.9+ でしか直らない CVE がある（CVE-2025-2999 [medium] unpack_sequence / CVE-2025-3001 [low] lstm_cell / CVE-2025-3000 [low] jit.script、ほか CVE-2025-55551 / CVE-2025-55552 / CVE-2025-55554 / CVE-2026-4538 / CVE-2026-24747）。修正版（2.9.1 / 2.10.0）は上記 `torch<2.9` ピンの外側にあり、取り込むには torchaudio 2.9・pyannote.audio 4.x への移行が必要。いずれも「特定の torch 内部関数に攻撃者が細工した入力を渡せる場合」のローカルなメモリ破損で、本ライブラリの用途（ユーザー自身の動画処理）では実効リスクが低いため tolerable risk として受容している。**torch のピンを外して "CVE を直す" と依存全体が壊れるので注意**。将来 pyannote 4.x へ移行する際にまとめて見直すこと。
+
+**その他の残存リスク**:
+- **nltk CVE-2026-81726**（high）: 3.10.3 時点で修正版なし。model-artifact API が pathsec を迂回する問題。本ライブラリは `sent_tokenize` と `punkt` ダウンロードのみ使用し、当該 API は呼ばない。
+- **protobuf CVE-2026-0994**: 修正は protobuf 6.x。mediapipe が protobuf<5 を要求するため未適用。JSON 再帰の DoS。顔検出パイプラインでは攻撃者が protobuf JSON を直接渡す経路がない。
+- **PyAV / FFmpeg PixelSmash (CVE-2026-8461)**: 修正は FFmpeg 8.1.2。av 17.1.0 は 8.1.1 バンドル。av 18.x は Python >=3.11 のため未適用。システム ffmpeg（CI は apt）側の更新も別途必要。
 
 ## コーディング規約（.cursorrules より要点）
 

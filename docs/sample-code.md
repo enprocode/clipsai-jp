@@ -6,7 +6,7 @@
 
 ### Pythonのインストール
 
-ClipsAIを使用するには、**Python 3.9以上**が必要です。
+ClipsAIを使用するには、**Python 3.10以上**が必要です。
 
 #### Pythonのバージョン確認
 

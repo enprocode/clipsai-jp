@@ -2,6 +2,30 @@
 
 このプロジェクトの重要な変更はすべてこのファイルに記録されます。
 
+## [1.0.8] - 2026-09-06
+
+### セキュリティ
+- `nltk` を `>=3.10.3` に引き上げ（pickle RCE / SSRF / path traversal 等の修正）
+- `av` を `>=17.1.0,<18.0.0` に更新（CVE-2026-40962 対応の FFmpeg 8.1.1 バンドル）
+- `transformers>=5.16.1,<6.0.0` を直接依存に追加（4.x 系の RCE CVE を排除）
+- `pillow>=12.3.0`、`urllib3>=2.7.0`、`requests>=2.34.2`、`jinja2>=3.1.6` を既知 CVE の修正版に固定
+- `python-magic` を `>=0.4.27`、`scikit-learn` を `>=1.7.2` に更新
+- `TextTiler.smooth` の `eval` を許可リスト経由の関数呼び出しに置換
+- `ffprobe` に渡すフィールド名 / ストリーム指定子を検証し、引数注入を防止
+
+### 変更
+- サポート Python を **3.10 以上**に変更（セキュリティ修正済みパッケージが 3.10 を要求するため。3.9 は 2025-10 に EOL）
+- CI のテストマトリクスを 3.9/3.12 から 3.10/3.12 に変更
+- GitHub Actions の `actions/setup-python` を v7 に更新
+- Dependabot の存在しないラベル指定を削除し、`av>=18` を ignore に追加
+- `opencv-python` を 5.x 系に更新（#63）
+
+### 既知の残存リスク（意図的に未対応）
+- torch 2.8.x の CVE（`torch<2.9` ピンのため。pyannote.audio 4.x 移行時に再評価）
+- nltk CVE-2026-81726（3.10.3 時点で修正版なし。本ライブラリは当該 API 未使用）
+- protobuf CVE-2026-0994（mediapipe が protobuf<5 を要求）
+- FFmpeg PixelSmash CVE-2026-8461（av 17.1.0 は FFmpeg 8.1.1。8.1.2 は av 18 / Python 3.11 が必要）
+
 ## [1.0.6] - 2026-07-11
 
 ### 修正

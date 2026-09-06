@@ -428,6 +428,15 @@ class TextTiler:
             raise TextTilerError(err)
 
 
+# 許可した窓関数のみを呼び出す（eval によるコード実行を避ける）
+_SMOOTH_WINDOW_FUNCS = {
+    "hanning": numpy.hanning,
+    "hamming": numpy.hamming,
+    "bartlett": numpy.bartlett,
+    "blackman": numpy.blackman,
+}
+
+
 # Pasted from the SciPy cookbook: https://www.scipy.org/Cookbook/SignalSmooth
 def smooth(x, window_len=3, window="flat"):
     """
@@ -438,26 +447,25 @@ def smooth(x, window_len=3, window="flat"):
     (with the window size) in both ends so that transient parts are minimized
     in the beginning and end part of the output signal.
 
-    :param x: the input signal
-    :param window_len: the dimension of the smoothing window; should be an odd integer
-    :param window: the type of window from 'flat', 'hanning', 'hamming', 'bartlett',
-    'blackman'
-        flat window will produce a moving average smoothing.
+    Parameters
+    ----------
+    x : numpy.ndarray
+        The input signal.
+    window_len : int
+        The dimension of the smoothing window; should be an odd integer.
+    window : str
+        The type of window from ``flat``, ``hanning``, ``hamming``,
+        ``bartlett``, ``blackman``. A flat window produces a moving average.
 
-    :return: the smoothed signal
+    Returns
+    -------
+    numpy.ndarray
+        The smoothed signal.
 
-    example::
-
-        t=linspace(-2,2,0.1)
-        x=sin(t)+randn(len(t))*0.1
-        y=smooth(x)
-
-    :see also: numpy.hanning, numpy.hamming, numpy.bartlett, numpy.blackman,
-    numpy.convolve,
-        scipy.signal.lfilter
-
-    TODO: the window parameter could be the window itself if an array instead of a
-    string
+    Notes
+    -----
+    See also: numpy.hanning, numpy.hamming, numpy.bartlett, numpy.blackman,
+    numpy.convolve, scipy.signal.lfilter.
     """
 
     if x.ndim != 1:
@@ -469,9 +477,9 @@ def smooth(x, window_len=3, window="flat"):
     if window_len < 3:
         return x
 
-    if window not in ["flat", "hanning", "hamming", "bartlett", "blackman"]:
+    if window not in ["flat", *_SMOOTH_WINDOW_FUNCS]:
         raise ValueError(
-            "Window is on of 'flat', 'hanning', 'hamming', 'bartlett', 'blackman'"
+            "Window is one of 'flat', 'hanning', 'hamming', 'bartlett', 'blackman'"
         )
 
     s = numpy.r_[2 * x[0] - x[window_len:1:-1], x, 2 * x[-1] - x[-1:-window_len:-1]]
@@ -479,7 +487,7 @@ def smooth(x, window_len=3, window="flat"):
     if window == "flat":  # moving average
         w = numpy.ones(window_len, "d")
     else:
-        w = eval("numpy." + window + "(window_len)")
+        w = _SMOOTH_WINDOW_FUNCS[window](window_len)
 
     y = numpy.convolve(w / w.sum(), s, mode="same")
 
