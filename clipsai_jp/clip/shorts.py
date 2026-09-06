@@ -23,10 +23,14 @@ SHORTS_DEFAULT_MAX_CLIPS = 8
 SWEET_SPOT_MIN = 25.0
 SWEET_SPOT_MAX = 45.0
 
+# 冒頭フックを優先確保する開始時刻の上限（秒）
+OPENING_PRIORITY_START = 15.0
+
 # 先頭が接続詞・前の文の続きだとショートとして弱い
+# 「これが」「それは」はフック（「これがポイント」等）にもなるので含めない
 _CONTINUATION_START = re.compile(
-    r"^(うん。|で、|でも、|そして|はい、では|次は|それは|"
-    r"これが|これは文法|一方で|このセクションで|"
+    r"^(うん。|で、|でも、|そして|はい、では|次は|"
+    r"一方で|このセクションで|これは文法|"
     r"さて、ここまで|このお話が|そこで)"
 )
 
@@ -45,10 +49,12 @@ _HOOK_KEYWORDS = (
     "これだけは",
     "挫折",
     "エラー",
-    "プログラミングやってみたい",
+    "やってみたい",
+    "始めれば",
+    "知っておきたい",
 )
 
-# 具体的なアドバイス（シェアされやすい）
+# 番号付きの具体アドバイス。汎用語（言語名など）は加点しすぎない
 _ADVICE_KEYWORDS = (
     "1つ目",
     "2つ目",
@@ -56,15 +62,18 @@ _ADVICE_KEYWORDS = (
     "ステップ1",
     "ステップ2",
     "ステップ3",
-    "コピー",
-    "検索",
-    "Python",
-    "JavaScript",
-    "5分",
-    "15分",
 )
 
 _COMPLETE_ENDINGS = ("。", "！", "？", "?", "です", "ます", "ましょう", "んです")
+_RANK_INTERNAL_KEYS = ("score", "weight", "_is_opening_hook")
+
+
+def _has_hook_signal(text: str) -> bool:
+    """先頭付近に問いかけまたはフック語があるか。"""
+    head = (text or "")[:70]
+    if "？" in head or "?" in head:
+        return True
+    return any(keyword in head for keyword in _HOOK_KEYWORDS)
 
 
 def is_shorts_mode(clip_style: str, max_clip_duration: float) -> bool:
@@ -223,9 +232,11 @@ def score_clip_text(
     if _CONTINUATION_START.match(text):
         score -= 1.0
 
-    # 動画冒頭の問いかけフックはショート向き
-    if start_time is not None and start_time <= 1.0 and ("？" in head or "?" in head):
-        score += 1.0
+    # 動画冒頭のフックは早いほど加点（0秒で +1.5、15秒で +0.5）
+    if start_time is not None and start_time <= OPENING_PRIORITY_START:
+        if "？" in head or "?" in head or hook_hits:
+            recency = max(0.0, 1.0 - start_time / OPENING_PRIORITY_START)
+            score += 0.5 + 1.0 * recency
 
     stripped = text.rstrip()
     if stripped.endswith(_COMPLETE_ENDINGS):
@@ -234,7 +245,7 @@ def score_clip_text(
         score -= 0.2
 
     advice_hits = sum(1 for kw in _ADVICE_KEYWORDS if kw in text)
-    score += min(0.6, 0.2 * advice_hits)
+    score += min(0.35, 0.12 * advice_hits)
 
     # 締めの CTA だけだと単体ショートとして弱い
     if "ここまで一緒に" in text or "最高に嬉しい" in text:
@@ -469,7 +480,9 @@ def rank_and_suppress(
     Returns
     -------
     list[dict]
-        スコア降順のクリップ（weight/score は含めない）
+        スコア降順のクリップ（weight/score は含めない）。
+        冒頭フック（開始15秒以内かつ問いかけ/フック語）がある場合は
+        1件を確保してから残りを埋める。
     """
     scored: List[Dict] = []
     for clip in clips:
@@ -498,12 +511,22 @@ def rank_and_suppress(
             max_clip_duration,
             start_time=start,
         )
+        item["_is_opening_hook"] = start <= OPENING_PRIORITY_START and _has_hook_signal(
+            text
+        )
         scored.append(item)
 
     scored.sort(key=lambda c: c["score"], reverse=True)
 
+    # 番号付きアドバイスが上位を埋め尽くしても、冒頭フックを1枠残す
+    opening = next((c for c in scored if c.get("_is_opening_hook")), None)
     kept: List[Dict] = []
+    if opening is not None:
+        kept.append(opening)
+
     for clip in scored:
+        if opening is not None and clip is opening:
+            continue
         if any(
             clip_iou(
                 clip["start_time"],
@@ -519,6 +542,8 @@ def rank_and_suppress(
         if max_clips is not None and len(kept) >= max_clips:
             break
 
+    kept.sort(key=lambda c: c["score"], reverse=True)
+
     logger.info(
         "Shorts ranking kept %s/%s clips (threshold=%.2f)",
         len(kept),
@@ -527,5 +552,5 @@ def rank_and_suppress(
     )
     cleaned = []
     for clip in kept:
-        cleaned.append({k: v for k, v in clip.items() if k not in ("score", "weight")})
+        cleaned.append({k: v for k, v in clip.items() if k not in _RANK_INTERNAL_KEYS})
     return cleaned

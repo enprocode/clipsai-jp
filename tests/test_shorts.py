@@ -104,6 +104,58 @@ def test_score_boosts_opening_hook():
     assert sweet > too_short
 
 
+def test_score_opening_hook_beats_numbered_advice():
+    """冒頭の問いかけフックは、中盤の番号付きアドバイスより高くなる。"""
+    opening = score_clip_text(
+        "プログラミングやってみたいんだけど、何から始めればいい？まずは目的を決めましょう。",
+        32.0,
+        10,
+        60,
+        start_time=0.0,
+    )
+    advice = score_clip_text(
+        "1つ目はコピーすること。2つ目は検索すること。3つ目は毎日触れることです。",
+        32.0,
+        10,
+        60,
+        start_time=200.0,
+    )
+    assert opening > advice
+
+
+def test_rank_reserves_opening_hook_in_top_clips():
+    """中盤の非重複アドバイスが多数でも、冒頭フックを1枠残す。"""
+    opening_text = "プログラミングやってみたいんだけど、何から始めればいい？"
+    advice_text = "1つ目はこれ。2つ目はあれ。3つ目はそれです。"
+    parts = [opening_text]
+    clips = [
+        {
+            "start_time": 0.0,
+            "end_time": 30.0,
+            "start_char": 0,
+            "end_char": len(opening_text),
+        }
+    ]
+    cursor = len(opening_text)
+    # 8本の非重複アドバイス（開始は15秒より後）
+    for i in range(8):
+        start = 40.0 + i * 35.0
+        clips.append(
+            {
+                "start_time": start,
+                "end_time": start + 30.0,
+                "start_char": cursor,
+                "end_char": cursor + len(advice_text),
+            }
+        )
+        parts.append(advice_text)
+        cursor += len(advice_text)
+
+    kept = rank_and_suppress(clips, "".join(parts), 10, 60, max_clips=8)
+    assert len(kept) == 8
+    assert any(clip["start_time"] == 0.0 for clip in kept)
+
+
 def test_clip_iou_and_rank_suppresses_overlap():
     text = "".join(s["sentence"] for s in _sentences())
     sents = _sentences()
