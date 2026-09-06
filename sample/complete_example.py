@@ -121,6 +121,19 @@ def main() -> None:
     #     embedding_model="high_accuracy",  # または "intfloat/multilingual-e5-base"
     # )
 
+    # LLM でクリップ検出精度を上げる場合（OpenAI / Anthropic / Gemini / 互換API）:
+    # 詳細は docs/llm-clip-finding.md を参照。キーは環境変数で渡す。
+    # clipfinder = ClipFinder(
+    #     min_clip_duration=10,
+    #     max_clip_duration=60,
+    #     cutoff_policy="average",
+    #     embedding_model="japanese",
+    #     use_llm=True,
+    #     llm_provider="openai",  # openai / anthropic / gemini / openai_compatible
+    #     llm_model="gpt-5.6-terra",
+    #     llm_priority=0.7,
+    # )
+
     clips = clipfinder.find_clips(transcription=transcription)
 
     logger.info(f"見つかったクリップ数: {len(clips)}")

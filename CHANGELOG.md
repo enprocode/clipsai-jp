@@ -4,6 +4,15 @@
 
 ## [Unreleased]
 
+### 変更
+- 1.1.0 のマルチプロバイダ LLM クリップ検出に合わせてドキュメントを拡充
+  - [`docs/llm-clip-finding.md`](docs/llm-clip-finding.md) を追加（プロバイダ、キー、`use_gemini` からの移行）
+  - 一次ドキュメントをオリジナルの clipsai.com ではなくフォーク内 [`docs/`](docs/README.md) に変更
+  - README のドキュメントリンクを GitHub の絶対 URL にし、PyPI の long_description でも辿れるようにした
+  - `llm_priority=1.0` で API が空提案を返したときのクリップ 0 件を注記
+  - `sample/complete_example.py` と `sandbox/clipsai.ipynb` に LLM の使用例を追記
+  - PyPI の Documentation URL をこのリポジトリの `docs/` に変更
+
 ## [1.1.0] - 2026-09-06
 
 ### 追加
