@@ -10,6 +10,13 @@ from typing import List
 from .clip import Clip
 from .exceptions import ClipFinderError
 from .gemini_clipfinder import GeminiClipFinder
+from .shorts import (
+    SHORTS_DEFAULT_MAX_CLIPS,
+    generate_sentence_windows,
+    is_shorts_mode,
+    rank_and_suppress,
+    snap_clip_to_sentences,
+)
 from .text_embedder import TextEmbedder
 from .texttiler import TextTiler
 from .texttiler import TextTilerConfigManager
@@ -39,11 +46,13 @@ class ClipFinder:
         embedding_aggregation_pool_method: str = "max",
         smoothing_width: int = 3,
         window_compare_pool_method: str = "mean",
-        embedding_model: str = None,
+        embedding_model: str = "japanese",
         use_gemini: bool = False,
         gemini_api_key: str = None,
         gemini_model: str = "gemini-2.5-flash",
         gemini_priority: float = 0.5,
+        clip_style: str = "auto",
+        max_clips: int = None,
     ) -> None:
         """
         Parameters
@@ -70,10 +79,10 @@ class ClipFinder:
             to adjacent windows.
             Possible values: 'mean', 'max'
         embedding_model: str or None
-            SentenceTransformer model name for text embeddings. If None, uses default.
-            Can use shortcuts: 'japanese' (日本語最適化), 'high_accuracy' (高精度),
-            'large' (最高精度、遅い), or full model names.
-            See TextEmbedder.RECOMMENDED_MODELS for available options.
+            SentenceTransformer model name for text embeddings. Default is
+            ``japanese`` (multilingual MPNet). Shortcuts: 'japanese',
+            'high_accuracy', 'large', 'default' (英語特化). Full model names
+            are also accepted. See TextEmbedder.RECOMMENDED_MODELS.
         use_gemini: bool
             Gemini APIを使用するかどうか（デフォルト: False）
         gemini_api_key: str or None
@@ -82,6 +91,12 @@ class ClipFinder:
             使用するGeminiモデル名（デフォルト: "gemini-2.5-flash"）
         gemini_priority: float
             Geminiの提案の重み（0.0=TextTilingのみ, 1.0=Geminiのみ、デフォルト: 0.5）
+        clip_style: str
+            ``auto`` は max_clip_duration が 90 秒以下ならショート向け処理、
+            ``shorts`` は常にショート向け、``longform`` は従来の TextTiling のみ。
+        max_clips: int or None
+            ショート向け処理で返す最大クリップ数。None なら 8 件。
+            ``0`` を指定すると重複抑制後の全件を返す。
         """
         # configuration check
         config_manager = ClipFinderConfigManager()
@@ -106,6 +121,17 @@ class ClipFinder:
         self._smoothing_width = smoothing_width
         self._window_compare_pool_method = window_compare_pool_method
         self._embedding_model = embedding_model
+        if clip_style not in ("auto", "shorts", "longform"):
+            raise ClipFinderError(
+                "clip_style must be 'auto', 'shorts', or 'longform', "
+                "not '{}'".format(clip_style)
+            )
+        if max_clips is not None and (not isinstance(max_clips, int) or max_clips < 0):
+            raise ClipFinderError(
+                "max_clips must be an int >= 0 or None, not '{}'".format(max_clips)
+            )
+        self._clip_style = clip_style
+        self._max_clips = max_clips
 
         # Gemini統合の初期化
         if use_gemini:
@@ -153,9 +179,10 @@ class ClipFinder:
         text_embedder = TextEmbedder(model_name=self._embedding_model)
         sentence_embeddings = text_embedder.embed_sentences(sentences)
 
-        # add full media as clip
+        # add full media as clip（ショート向けでは本編全体は候補にしない）
         clips = []
-        if transcription.end_time <= self._max_clip_duration:
+        shorts_mode = is_shorts_mode(self._clip_style, self._max_clip_duration)
+        if (not shorts_mode) and transcription.end_time <= self._max_clip_duration:
             full_media_clip = {}
             full_media_clip["start_char"] = 0
             full_media_clip["end_char"] = len(transcription.get_char_info())
@@ -164,43 +191,60 @@ class ClipFinder:
             full_media_clip["norm"] = 1.0
             clips.append(full_media_clip)
 
-        # <3 min clips
-        k_vals = [5, 7]
-        for k in k_vals:
-            clips = self._text_tile_multiple_rounds(
+        if shorts_mode:
+            # 短い窓でトピック境界を取り、さらに文連続の尺フィルタ候補を足す
+            for k in (3, 5, 7):
+                clips = self._text_tile_multiple_rounds(
+                    sentences_info,
+                    sentence_embeddings,
+                    k,
+                    self._min_clip_duration,
+                    self._max_clip_duration,
+                    clips,
+                )
+            clips = clips + generate_sentence_windows(
                 sentences_info,
-                sentence_embeddings,
-                k,
                 self._min_clip_duration,
                 self._max_clip_duration,
-                clips,
             )
+        else:
+            # <3 min clips
+            k_vals = [5, 7]
+            for k in k_vals:
+                clips = self._text_tile_multiple_rounds(
+                    sentences_info,
+                    sentence_embeddings,
+                    k,
+                    self._min_clip_duration,
+                    self._max_clip_duration,
+                    clips,
+                )
 
-        # 3+ min clips
-        k_vals = [11, 17]
-        min_duration_secs = 180  # 3 minutes
-        for k in k_vals:
-            clips = self._text_tile_multiple_rounds(
-                sentences_info,
-                sentence_embeddings,
-                k,
-                min_duration_secs,
-                self._max_clip_duration,
-                clips,
-            )
+            # 3+ min clips
+            k_vals = [11, 17]
+            min_duration_secs = 180  # 3 minutes
+            for k in k_vals:
+                clips = self._text_tile_multiple_rounds(
+                    sentences_info,
+                    sentence_embeddings,
+                    k,
+                    min_duration_secs,
+                    self._max_clip_duration,
+                    clips,
+                )
 
-        # 10+ min clips
-        k_vals = [37, 53, 73, 97]
-        min_duration_secs = 600  # 10 minutes
-        for k in k_vals:
-            clips = self._text_tile_multiple_rounds(
-                sentences_info,
-                sentence_embeddings,
-                k,
-                min_duration_secs,
-                self._max_clip_duration,
-                clips,
-            )
+            # 10+ min clips
+            k_vals = [37, 53, 73, 97]
+            min_duration_secs = 600  # 10 minutes
+            for k in k_vals:
+                clips = self._text_tile_multiple_rounds(
+                    sentences_info,
+                    sentence_embeddings,
+                    k,
+                    min_duration_secs,
+                    self._max_clip_duration,
+                    clips,
+                )
 
         # Geminiを使用する場合
         if self._use_gemini:
@@ -210,6 +254,7 @@ class ClipFinder:
                     sentences_info,
                     self._min_clip_duration,
                     self._max_clip_duration,
+                    for_shorts=shorts_mode,
                 )
 
                 # Geminiの提案をクリップ形式に変換
@@ -240,7 +285,7 @@ class ClipFinder:
         # 動画の長さを取得
         video_duration = transcription.end_time
 
-        clip_objects = []
+        valid_clips = []
         for clip_info in clips:
             start_time = clip_info["start_time"]
             end_time = clip_info["end_time"]
@@ -260,10 +305,41 @@ class ClipFinder:
                 )
                 continue
 
+            clipped = dict(clip_info)
+            clipped["start_time"] = start_time
+            clipped["end_time"] = end_time
+            valid_clips.append(clipped)
+
+        if shorts_mode:
+            snapped = [
+                snap_clip_to_sentences(
+                    c,
+                    sentences_info,
+                    min_clip_duration=self._min_clip_duration,
+                    max_clip_duration=self._max_clip_duration,
+                )
+                for c in valid_clips
+            ]
+            if self._max_clips == 0:
+                clip_limit = None
+            elif self._max_clips is None:
+                clip_limit = SHORTS_DEFAULT_MAX_CLIPS
+            else:
+                clip_limit = self._max_clips
+            valid_clips = rank_and_suppress(
+                snapped,
+                transcription.text,
+                self._min_clip_duration,
+                self._max_clip_duration,
+                max_clips=clip_limit,
+            )
+
+        clip_objects = []
+        for clip_info in valid_clips:
             clip_objects.append(
                 Clip(
-                    start_time,
-                    end_time,
+                    clip_info["start_time"],
+                    clip_info["end_time"],
                     clip_info["start_char"],
                     clip_info["end_char"],
                 )
@@ -383,6 +459,8 @@ class ClipFinder:
         for i in range(num_clips):
             if boundaries[i] == BOUNDARY:
                 clip_end_idx = i
+                if clip_start_idx > clip_end_idx:
+                    clip_start_idx = clip_end_idx
                 super_clip = {}
                 super_clip["start_char"] = clips[clip_start_idx]["start_char"]
                 super_clip["end_char"] = clips[clip_end_idx]["end_char"]
@@ -393,7 +471,9 @@ class ClipFinder:
                 ).item()
 
                 super_clips.append(super_clip)
-                clip_start_idx = clip_end_idx
+                # boundaries[i]==1 は embedding i と i+1 の間の境界なので、
+                # 次クリップは i+1 から始める（境界文を二重に含めない）
+                clip_start_idx = clip_end_idx + 1
 
                 super_clip_num += 1
 

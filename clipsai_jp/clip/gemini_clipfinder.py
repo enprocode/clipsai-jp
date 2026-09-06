@@ -101,6 +101,7 @@ class GeminiClipFinder:
         sentences: List[Dict],
         min_clip_duration: int = 10,
         max_clip_duration: int = 60,
+        for_shorts: bool = False,
     ) -> List[Dict]:
         """
         Gemini APIを使用してクリップ境界を提案
@@ -116,6 +117,8 @@ class GeminiClipFinder:
             最小クリップ長（秒）
         max_clip_duration: int
             最大クリップ長（秒）
+        for_shorts: bool
+            True のとき、トピック分割ではなく自己完結のショート向け境界を依頼する
 
         Returns
         -------
@@ -141,7 +144,11 @@ class GeminiClipFinder:
                 break
 
             boundaries = self._suggest_for_chunk(
-                chunk, chunk_start, min_clip_duration, max_clip_duration
+                chunk,
+                chunk_start,
+                min_clip_duration,
+                max_clip_duration,
+                for_shorts=for_shorts,
             )
             all_boundaries.extend(boundaries)
 
@@ -163,6 +170,7 @@ class GeminiClipFinder:
         index_offset: int,
         min_clip_duration: int,
         max_clip_duration: int,
+        for_shorts: bool = False,
     ) -> List[Dict]:
         """
         1チャンク分の文に対してGeminiにクリップ境界を問い合わせる
@@ -178,6 +186,8 @@ class GeminiClipFinder:
             最小クリップ長（秒）
         max_clip_duration: int
             最大クリップ長（秒）
+        for_shorts: bool
+            ショート向けプロンプトを使うかどうか
 
         Returns
         -------
@@ -201,7 +211,11 @@ class GeminiClipFinder:
         ]
 
         prompt = self._build_prompt(
-            text_preview, sentences_summary, min_clip_duration, max_clip_duration
+            text_preview,
+            sentences_summary,
+            min_clip_duration,
+            max_clip_duration,
+            for_shorts=for_shorts,
         )
 
         try:
@@ -220,22 +234,41 @@ class GeminiClipFinder:
         sentences_summary: List[Dict],
         min_clip_duration: int,
         max_clip_duration: int,
+        for_shorts: bool = False,
     ) -> str:
         """クリップ境界検出のプロンプト文字列を組み立てる"""
-        return f"""あなたは動画編集の専門家です。以下の動画の文字起こしテキストを分析して、自然なトピック境界を見つけてください。
+        if for_shorts:
+            goal = """あなたはYouTubeショート（15〜60秒）の編集者です。長い解説動画から、単体で見て意味が通じ、視聴者の足を止めるクリップを選んでください。
+
+【選び方】
+1. 各クリップは{min}秒以上{max}秒以下
+2. 冒頭にフックがあること（問いかけ、意外な事実、具体的なコツ、結論）
+3. 文の途中で切らない。提示された文の start_time / end_time を使う
+4. 前の文の続き（「で、」「そして」「これは文法が…」など）から始めない
+5. 締めのCTAや「ここまで見てくれてありがとう」だけは避ける
+6. 同じ内容の重複クリップは出さない。多様性を優先
+7. 番号付きのコツ・比較・たとえ話など、単体でシェアできる区間を優先""".format(
+                min=min_clip_duration, max=max_clip_duration
+            )
+        else:
+            goal = """あなたは動画編集の専門家です。以下の動画の文字起こしテキストを分析して、自然なトピック境界を見つけてください。
+
+【要件】
+1. 各クリップは{min}秒以上{max}秒以下であること
+2. トピックが明確に変わる箇所を境界として提案
+3. 文の途中で分割しないこと（文の境界で分割）
+4. 自然な会話の流れを考慮すること
+5. 日本語の文構造（主述関係、修飾関係）を考慮すること""".format(
+                min=min_clip_duration, max=max_clip_duration
+            )
+
+        return f"""{goal}
 
 【文字起こしテキスト】
 {text_preview}
 
 【文分割結果（MeCabで日本語最適化済み）】
 {json.dumps(sentences_summary, ensure_ascii=False, indent=2)}
-
-【要件】
-1. 各クリップは{min_clip_duration}秒以上{max_clip_duration}秒以下であること
-2. トピックが明確に変わる箇所を境界として提案
-3. 文の途中で分割しないこと（文の境界で分割）
-4. 自然な会話の流れを考慮すること
-5. 日本語の文構造（主述関係、修飾関係）を考慮すること
 
 【重要な注意点】
 - 提供された文分割結果は、MeCabで日本語の文構造を考慮して分割されています

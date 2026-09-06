@@ -126,11 +126,14 @@ class Clip:
 
     def __bool__(self) -> bool:
         """
-        Returns True if the clip is not empty, False otherwise.
+        Returns True if the clip has a positive duration and character span.
+
+        A clip that starts at time 0 or character 0 is valid. Only empty or
+        reversed ranges are treated as false.
+
+        Returns
+        -------
+        bool
+            True if ``end_time > start_time`` and ``end_char > start_char``
         """
-        return (
-            bool(self._start_time)
-            and bool(self._end_time)
-            and bool(self._start_char)
-            and bool(self._end_char)
-        )
+        return self._end_time > self._start_time and self._end_char > self._start_char
