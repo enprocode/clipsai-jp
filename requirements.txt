@@ -13,14 +13,20 @@ scipy>=1.15.3,<2.0.0
 torch>=2.8.0,<2.9.0
 torchaudio>=2.8.0,<2.9.0
 sentence-transformers>=5.6.0,<6.0.0
-scikit-learn>=1.3.0,<2.0.0
+scikit-learn>=1.7.2,<2.0.0
+# sentence-transformers は transformers>=4.41 を許容するが、4.x には RCE CVE が残る
+transformers>=5.16.1,<6.0.0
+# Pillow 12.3.0 で 2026 年の OOB / bomb 系 CVE が修正済み
+pillow>=12.3.0
 
 # Transcription
 faster-whisper>=1.2.1,<2.0.0
 
 # Audio/Video processing
-av>=11.0.0,<17.0.0
-opencv-python>=5.0.0.93,<6.0.0
+# av 17.1.0 は CVE-2026-40962 対応のため FFmpeg 8.1.1 をバンドル（Python >=3.10）
+av>=17.1.0,<18.0.0
+# 4.12+ / 5.x は Python>=3.9 で numpy>=2 を要求し、mediapipe の numpy<2 と衝突（#63 は解決不能）
+opencv-python>=4.5.0,<4.12.0
 # mediapipe 0.10.30以降ではレガシーsolutions API（face_detection等）が削除されているため、
 # 0.10.30未満に制限（0.10.21がsolutions APIを持つ最後のバージョン）
 mediapipe>=0.10.21,<0.10.30
@@ -34,10 +40,14 @@ pyannote.core>=5.0.0,<6.0.0
 
 # Utilities
 matplotlib>=3.10.9,<4.0.0
-nltk>=3.10.0,<4.0.0
+nltk>=3.10.3,<4.0.0
 psutil>=7.2.2,<8.0.0
 pynvml>=11.0.0,<14.0.0
-python-magic>=0.4.20,<0.5.0
+python-magic>=0.4.27,<0.5.0
+# huggingface-hub / nltk 経由の間接依存。既知 CVE の修正版に固定
+urllib3>=2.7.0
+requests>=2.34.2
+jinja2>=3.1.6
 
 # Testing
 pytest>=9.1.1,<10.0.0

@@ -9,10 +9,10 @@ queue_rules:
     # マージキューに入る条件 / マージされる条件
     # チェック名は .github/workflows/tests.yml の test ジョブ（matrix）に対応
     queue_conditions:
-      - check-success=test (3.9)
+      - check-success=test (3.10)
       - check-success=test (3.12)
     merge_conditions:
-      - check-success=test (3.9)
+      - check-success=test (3.10)
       - check-success=test (3.12)
     merge_method: merge
 
@@ -31,7 +31,7 @@ pull_request_rules:
     conditions:
       - author=dependabot[bot]
       - head~=^dependabot/pip/minor-and-patch-
-      - check-success=test (3.9)
+      - check-success=test (3.10)
       - check-success=test (3.12)
     actions:
       queue:

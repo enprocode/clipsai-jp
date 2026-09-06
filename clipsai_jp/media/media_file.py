@@ -5,10 +5,11 @@ Working with media files (i.e. image, audio, video).
 # standard library imports
 import json
 import logging
+import re
 import subprocess
 
 # current package imports
-from .exceptions import NoAudioStreamError, NoVideoStreamError
+from .exceptions import MediaFileError, NoAudioStreamError, NoVideoStreamError
 
 # local imports
 from clipsai_jp.filesys.file import File
@@ -16,6 +17,28 @@ from clipsai_jp.filesys.manager import FileSystemManager
 
 SUCCESS = 0
 FALSE = 0
+
+# ffprobe の -show_entries / -select_streams に渡す値の注入を防ぐ
+_FFPROBE_FIELD_RE = re.compile(r"^[A-Za-z0-9_]+$")
+_FFPROBE_STREAM_RE = re.compile(r"^[va](:\d+)?$")
+
+
+def _validate_ffprobe_field(name: str, value: str) -> None:
+    """Raise MediaFileError if value is not a safe ffprobe field name."""
+    if not isinstance(value, str) or not _FFPROBE_FIELD_RE.fullmatch(value):
+        raise MediaFileError(
+            "Invalid {} '{}'. Only letters, digits, and underscores are allowed."
+            "".format(name, value)
+        )
+
+
+def _validate_ffprobe_stream(stream: str) -> None:
+    """Raise MediaFileError if stream selector is not a safe ffprobe stream."""
+    if not isinstance(stream, str) or not _FFPROBE_STREAM_RE.fullmatch(stream):
+        raise MediaFileError(
+            "Invalid stream '{}'. Expected 'v', 'a', or 'v:0'/'a:0' style selector."
+            "".format(stream)
+        )
 
 
 class MediaFile(File):
@@ -104,6 +127,7 @@ class MediaFile(File):
         str
             formatting information
         """
+        _validate_ffprobe_field("format_field", format_field)
         self.assert_exists()
 
         # get format info
@@ -160,6 +184,8 @@ class MediaFile(File):
         str
             stream information
         """
+        _validate_ffprobe_stream(stream)
+        _validate_ffprobe_field("stream_field", stream_field)
         self.assert_exists()
 
         result = subprocess.run(
