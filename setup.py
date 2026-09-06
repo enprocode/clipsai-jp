@@ -41,13 +41,13 @@ setup(
         # （17.x は Python >=3.10。18.x は Python >=3.11 のため 18 未満に制限）
         "av>=17.1.0,<18.0.0",
         # 4.12+ / 5.x は Python>=3.9 で numpy>=2 を要求し、mediapipe の numpy<2 と衝突
-        "opencv-python>=4.5.0,<4.12.0",
-        "scenedetect>=0.6.5,<0.8.0",
+        "opencv-python>=4.11.0.86,<4.12.0",
+        "scenedetect>=0.7.1,<0.8.0",
 
         # 機械学習（必須）
-        "sentence-transformers>=3.0.0,<6.0.0",
+        "sentence-transformers>=6.0.1,<7.0.0",
         "scikit-learn>=1.7.2,<2.0.0",
-        # sentence-transformers は transformers>=4.41 を許容するが、
+        # sentence-transformers 6.x は transformers 5.x を要求する。
         # 4.x 系には RCE 等の未修正 CVE が残るため 5.16.1 以上に固定
         "transformers>=5.16.1,<6.0.0",
         # Pillow 12.3.0 で 2026 年の OOB / bomb 系 CVE が修正済み
@@ -109,7 +109,7 @@ setup(
         ],
         # GPUメモリ監視（オプション）
         "gpu": [
-            "pynvml>=11.0.0,<14.0.0",
+            "pynvml>=13.0.1,<14.0.0",
         ],
         # 開発・テスト用
         "dev": [
