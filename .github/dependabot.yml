@@ -42,6 +42,9 @@ updates:
       # av 18.x は Python >=3.11。本パッケージは 3.10 をサポートするため無視
       - dependency-name: "av"
         versions: [">=18.0.0"]
+      # opencv-python 4.12+ / 5.x は numpy>=2 を要求し mediapipe の numpy<2 と衝突（#63）
+      - dependency-name: "opencv-python"
+        versions: [">=4.12.0"]
 
   # GitHub Actionsのバージョン更新
   - package-ecosystem: "github-actions"

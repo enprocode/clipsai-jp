@@ -17,8 +17,8 @@
 - サポート Python を **3.10 以上**に変更（セキュリティ修正済みパッケージが 3.10 を要求するため。3.9 は 2025-10 に EOL）
 - CI のテストマトリクスを 3.9/3.12 から 3.10/3.12 に変更
 - GitHub Actions の `actions/setup-python` を v7 に更新
-- Dependabot の存在しないラベル指定を削除し、`av>=18` を ignore に追加
-- `opencv-python` を 5.x 系に更新（#63）
+- Dependabot の存在しないラベル指定を削除し、`av>=18` と `opencv-python>=4.12` を ignore に追加
+- `opencv-python` を `<4.12` に制限（4.12+/5.x は numpy>=2 を要求し mediapipe と衝突するため、#63 の 5.x 更新を巻き戻し）
 
 ### 既知の残存リスク（意図的に未対応）
 - torch 2.8.x の CVE（`torch<2.9` ピンのため。pyannote.audio 4.x 移行時に再評価）

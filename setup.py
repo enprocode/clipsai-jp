@@ -40,7 +40,8 @@ setup(
         # av 17.1.0 は CVE-2026-40962 対応のため FFmpeg 8.1.1 をバンドル
         # （17.x は Python >=3.10。18.x は Python >=3.11 のため 18 未満に制限）
         "av>=17.1.0,<18.0.0",
-        "opencv-python>=5.0.0.93,<6.0.0",
+        # 4.12+ / 5.x は Python>=3.9 で numpy>=2 を要求し、mediapipe の numpy<2 と衝突
+        "opencv-python>=4.5.0,<4.12.0",
         "scenedetect>=0.6.5,<0.8.0",
 
         # 機械学習（必須）

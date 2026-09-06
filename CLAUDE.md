@@ -61,6 +61,7 @@ printf 'dicdir = %s\n' "$(.venv/bin/python -c 'import unidic_lite; print(unidic_
 | pyannote.core | `<6.0.0` | pyannote.audio 3.x が pyannote.core<6.0 を要求 |
 | mediapipe | `>=0.10.20,<0.10.30` | 0.10.30 でレガシー solutions API（顔検出で使用）が削除 |
 | numpy | `<2.0.0` | mediapipe が numpy<2 を要求 |
+| opencv-python | `>=4.5.0,<4.12.0` | 4.12+ / 5.x は numpy>=2 を要求し mediapipe と衝突（#63） |
 | av | `>=17.1.0,<18.0.0` | 17.1.0 は CVE-2026-40962 対応の FFmpeg 8.1.1 をバンドル。18.x は Python >=3.11 |
 | nltk | `>=3.10.3,<4.0.0` | 3.10.3 未満には pickle RCE / SSRF / path traversal |
 | transformers | `>=5.16.1,<6.0.0` | 4.x には RCE 等の未修正 CVE。sentence-transformers 5.x は `<6` |
