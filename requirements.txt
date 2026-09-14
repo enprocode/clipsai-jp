@@ -15,7 +15,7 @@ torchaudio>=2.8.0,<2.9.0
 sentence-transformers>=6.0.1,<7.0.0
 scikit-learn>=1.7.2,<2.0.0
 # sentence-transformers 6.x は transformers 5.x を要求する。4.x には RCE CVE が残る
-transformers>=5.16.1,<6.0.0
+transformers>=5.17.0,<6.0.0
 # Pillow 12.3.0 で 2026 年の OOB / bomb 系 CVE が修正済み
 pillow>=12.3.0
 
